@@ -1,0 +1,26 @@
+{
+  "name": "petstore",
+  "version": "0.0.1",
+  "description": "a framework for declarative server applications",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "example:pet-store:server": "npx ts-node ./examples/pestore/scripts/start --projectRoot=./examples/pestore/apps/api-server --main=./examples/pestore/apps/api-server/src/index.ts"
+  },
+  "author": "eecho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eecho/eechojs.git"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "devDependencies": {
+    "ts-node": "^10.9.2"
+  },
+  "dependencies": {
+  }
+}

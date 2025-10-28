@@ -1,0 +1,32 @@
+{
+  "name": "pestore-lib",
+  "version": "0.0.1",
+  "description": "a framework for declarative server applications",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test:core": "jest --config libs/core/test/unit/jest-unit.json",
+    "build:client": "",
+    "build:client:watch": "npx ts-node ./scripts/build-watch.client",
+    "start:server": "npx ts-node ./scripts/start --projectRoot=./packages/server --main=./packages/server/src/index.ts",
+    "start:server:watch": "npx ts-node ./scripts/start-watch",
+    "start:cli": "npx ts-node ./scripts/start --projectRoot=./packages/cli --main=./packages/cli/src/main.ts"
+  },
+  "author": "Cogi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eecho/eechojs.git"
+  },
+  "workspaces": [
+    "apps/*"
+  ],
+  "devDependencies": {
+  },
+  "dependencies": {
+    "@eecho/definition": "*",
+    "@eecho/api-client": "*"
+  }
+}

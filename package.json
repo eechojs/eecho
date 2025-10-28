@@ -1,0 +1,56 @@
+{
+  "name": "eecho",
+  "version": "0.0.1",
+  "description": "a framework for declarative server applications",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "libs:definition:build": "cd packages/libs/common/definition && npm run build",
+    "libs:definition:pack": "cd packages/libs/common/definition && npm pack",
+
+    "libs:api-client:build": "cd packages/libs/client/api-client && npm run build",
+    "libs:api-client:pack": "cd packages/libs/client/api-client && npm pack",
+
+    "libs:express:build": "cd packages/libs/server/express && npm run build",
+    "libs:express:pack": "cd packages/libs/server/express && npm pack",
+
+    "build:all": "npm run libs:definition:build && npm run libs:api-client:build && npm run libs:express:build",
+    "pack:all": "npm run libs:definition:pack && npm run libs:api-client:pack && npm run libs:express:pack",
+
+    "publish:definition": "cd packages/libs/common/definition && npm publish",
+    "publish:api-client": "cd packages/libs/client/api-client && npm publish",
+    "publish:express": "cd packages/libs/server/express && npm publish",
+    "publish:all": "npm run publish:definition && npm run publish:api-client && npm run publish:express",
+
+    "dry-run:definition": "cd packages/libs/common/definition && npm publish --dry-run",
+    "dry-run:api-client": "cd packages/libs/client/api-client && npm publish --dry-run",
+    "dry-run:express": "cd packages/libs/server/express && npm publish --dry-run",
+    "dry-run:all": "npm run dry-run:definition && npm run dry-run:api-client && npm run dry-run:express",
+
+    "example:pet-store:client": "cd examples/pestore/apps/client && npm run dev",
+    "example:pet-store:server": "cd examples/pestore/apps/server && npm run dev"
+  },
+  "author": "eecho",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eecho/eechojs.git"
+  },
+  "workspaces": [
+    "packages/server/*",
+    "packages/libs/client/*",
+    "packages/libs/common/*",
+    "packages/libs/server/*",
+    "examples/pestore/apps/*"
+  ],
+  "devDependencies": {
+    "@types/mongodb": "^4.0.6",
+    "concurrently": "^9.2.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6"
+  },
+  "dependencies": {
+  }
+}

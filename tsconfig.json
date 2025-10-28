@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@eecho/definition": ["packages/libs/common/definition/src/index.ts"],
+      "@eecho/definition/*": ["packages/libs/common/definition/src/*"],
+      "@eecho/api-client": ["packages/libs/client/api-client/src/index.ts"],
+      "@eecho/api-client/*": ["packages/libs/client/api-client/src/*"],
+      "@eecho/server": ["packages/server/eecho/src/index.ts"],
+      "@eecho/server/*": ["packages/server/eecho/src/*"],
+      "@eecho/express": ["packages/libs/server/express/src/index.ts"],
+      "@eecho/express/*": ["packages/libs/server/express/src/*"]
+    },
+    "outDir": "dist"
+  },
+  "include": [
+    "packages/libs/common/definition/src/**/*",
+    "packages/libs/client/api-client/src/**/*",
+    "packages/libs/server/*/src/**/*",
+    "packages/server/eecho/src/**/*",
+  ]
+}
