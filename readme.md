@@ -1,3 +1,8 @@
+## Usage
+```
+npm install @eecho/definition @eecho/api-client @eecho/express
+```
+
 ## Example
 
 ```bash
