@@ -3,16 +3,16 @@ import { z } from 'zod';
 import { ClientAPISpecification } from '@eecho/definition';
 
 import {
-  ModelDefinition,
   extractCreateRequiredField,
   extractReadbleField,
   extractSearchArrayOption,
   extractSearchOption,
   extractSortableOption,
   extractUpdateOption,
+  Definition
 } from '@eecho/definition';
 
-export function genAPIDefinition<TDefinition extends ModelDefinition, const TPrefix extends string>(params: {
+export function genAPIDefinition<TDefinition extends Definition, const TPrefix extends string>(params: {
   definition: TDefinition;
   endpointPrefix: TPrefix;
 }) {

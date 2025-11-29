@@ -1,42 +1,24 @@
 import { z } from 'zod';
-
-const DefinitionIndex = z.enum([
-  "Identifier",
-]);
-
-const APIDefinition = z.enum(["Searchable", "Sortable", "Detail", "Updatable"]);
-
-type DefinitionIndex = z.infer<typeof DefinitionIndex>;
-type APIDefinition = z.infer<typeof APIDefinition>;
-
-export interface Definition {
-  [field: string]: {
-    type: z.ZodTypeAny;
-    index?: DefinitionIndex[];
-    api?: {
-      index: APIDefinition[];
-    }
-  }
-}
+import type { Definition } from './model/model.define.type'
 
 export type DefinitionDocument<T extends Definition> = {
   [K in keyof T]: z.infer<T[K]['type']>;
 }
 
 export type UpdateField<T extends Definition> = {
-  [K in keyof T as T[K]['api'] extends { index: infer Indices }
-    ? Indices extends APIDefinition[]
-      ? 'Updatable' extends Indices[number]
+  [K in keyof T as T[K] extends { api: { update: infer U } }
+    ? U extends readonly (infer Item)[]
+      ? 'Updatable' extends Item
         ? K
         : never
       : never
-    : never] ?: z.infer<T[K]['type']>;
+    : never]?: z.infer<T[K]['type']>;
 };
 
 export type SearchField<T extends Definition> = {
-  [K in keyof T as T[K]['api'] extends { index: infer Indices }
-    ? Indices extends APIDefinition[]
-      ? 'Searchable' extends Indices[number]
+  [K in keyof T as T[K] extends { api: { read: infer R } }
+    ? R extends readonly (infer Item)[]
+      ? 'Searchable' extends Item
         ? K
         : never
       : never
@@ -45,10 +27,10 @@ export type SearchField<T extends Definition> = {
       : z.infer<T[K]['type']>;
 };
 
-export type IdentifierField <T extends Definition> = {
-  [K in keyof T as T[K]['index'] extends DefinitionIndex[]
-    ? T[K]['index'] extends DefinitionIndex[]
-      ? 'Identifier' extends T[K]['index'][number]
+export type IdentifierField<T extends Definition> = {
+  [K in keyof T as T[K] extends { index: infer I }
+    ? I extends readonly (infer Item)[]
+      ? 'Identifier' extends Item
         ? K
         : never
       : never

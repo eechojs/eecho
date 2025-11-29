@@ -1,21 +1,21 @@
 import { ClientSession, Filter, FindOneAndUpdateOptions, MongoClient, ObjectId, UpdateFilter } from "mongodb";
 import { z } from 'zod';
 
-import { ModelDefinition, ViewDefinition, Context } from "@eecho/definition";
+import { ViewDefinition, Context, Definition } from "@eecho/definition";
 import { extractSearchOption, extractSearchArrayOption, extractUpdateOption, extractCreateFieldWithSystem } from "@eecho/definition";
 
 // 타입 정의들
-type DefinitionDocument<T extends ModelDefinition> = {
+type DefinitionDocument<T extends Definition> = {
   [K in keyof T]: z.infer<T[K]['type']>;
 };
 
 // Create용 타입: Optional만 제외하고 System 포함
-type CreateDocument<T extends ModelDefinition> = {
+type CreateDocument<T extends Definition> = {
   [K in keyof ReturnType<typeof extractCreateFieldWithSystem<T>>]: z.infer<ReturnType<typeof extractCreateFieldWithSystem<T>>[K]>;
 };
 
 // 검색 가능한 필드들을 추출하는 헬퍼 함수 (기존 helper 활용)
-function getSearchableFields(definition: ModelDefinition) {
+function getSearchableFields(definition: Definition) {
   const searchableFields = Object.keys(extractSearchOption({ definition }));
   const searchableArrayFields = Object.keys(extractSearchArrayOption({ definition }));
   return [...searchableFields, ...searchableArrayFields];
@@ -46,7 +46,7 @@ function buildSearchQuery(search: any, searchableFields: string[]) {
   );
 }
 
-export function genRepository<TDefinition extends ModelDefinition>(params: {
+export function genRepository<TDefinition extends Definition>(params: {
   definition: TDefinition;
   dbClient: Promise<MongoClient>;
   dbName?: string;

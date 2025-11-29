@@ -1,5 +1,4 @@
 export type {
-  Definition,
   DefinitionDocument,
   IdentifierField,
   SearchField,
@@ -26,6 +25,6 @@ export {
   extractCreateFieldWithSystem
 } from './repository/definition.repository.helper';
 
-export { defineModel, registerModel } from './model.definition';
-export type { ModelDefinition } from './model.definition';
+export { defineModel } from './model/model.define';
+export type { Definition } from './model/model.define.type';
 export type { ViewDefinition } from './view.definition';

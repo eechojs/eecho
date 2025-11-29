@@ -2,7 +2,6 @@ import { ObjectId } from 'bson';
 import { z } from 'zod';
 
 import {
-  ModelDefinition,
   ServerAPISpecification,
   extractCreateRequiredField,
   extractReadbleField,
@@ -10,7 +9,8 @@ import {
   extractSearchOption,
   extractSortableOption,
   extractUpdateOption,
-  extractObjectIdFields 
+  extractObjectIdFields, 
+  Definition
  } from '@eecho/definition';
 
 import { ObjectIdCompatible } from './mongo.util';
@@ -50,7 +50,7 @@ const applyObjectIdTransforms = <TShape extends Record<string, z.ZodTypeAny>>(
   ) as TShape;
 };
 
-export function genAPISpec<TDefinition extends ModelDefinition, const TPrefix extends string>(params: {
+export function genAPISpec<TDefinition extends Definition, const TPrefix extends string>(params: {
   definition: TDefinition;
   endpointPrefix: TPrefix;
 }) {

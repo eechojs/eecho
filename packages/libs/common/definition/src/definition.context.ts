@@ -1,8 +1,8 @@
-import { ModelDefinition } from "./model.definition";
+import { Definition } from "./model/model.define.type";
 
 interface Context {
   RepositoryContext: {
-    model: ModelDefinition;
+    model: Definition;
     collectionName: string;
     dbName: string;
   }[];
