@@ -1,70 +1,102 @@
-import { DefinitionFrom, InputArrayDefinition, InputDefinition, InputObjectDefinition, InputPrimitiveDefinition, PrimitiveDefinition } from "./model.define.type";
+import { z } from 'zod';
 
-type FieldDefinition = InputPrimitiveDefinition | InputArrayDefinition | InputObjectDefinition
+import {
+  APIIndex,
+  ArrayDefinition,
+  Definition,
+  DefinitionFrom,
+  InputArrayDefinition,
+  InputDefinition,
+  InputObjectDefinition,
+  InputPrimitiveDefinition,
+  PrimitiveDefinition,
+} from './model.define.type';
 
-function definePrimitive(input: InputPrimitiveDefinition, key: string){
+type InputFieldDefinition = InputPrimitiveDefinition | InputArrayDefinition | InputObjectDefinition;
+type NormalizedFieldDefinition = Definition[string];
+
+const EMPTY_API_INDEX = {
+  index: [],
+  create: [],
+  read: [],
+  update: [],
+  delete: [],
+} as const satisfies APIIndex;
+
+function normalizeAPIIndex(api?: Partial<APIIndex>): APIIndex {
   return {
-    ...input,
-    key,
-    kind: "primitive" as const,
-    index: input.index || [],
-    api: {
-      index: input.api?.index || [],
-      create: input.api?.create || [],
-      read: input.api?.read || [],
-      update: input.api?.update || [],
-      delete: input.api?.delete || [],
-    },
-  } satisfies PrimitiveDefinition;
-}
-function defineArray(input: InputArrayDefinition, key: string){
-  const itemDef = input.type[0];
-  if(isPrimitiveDefine(itemDef)){
-    return {
-      kind: "array" as const,
-      key,
-      type: definePrimitive(itemDef, key + "Item")
-    };
-  } else if(isObjectDefine(itemDef)){
-    return {
-      kind: "array" as const,
-      key,
-      type: defineObject(itemDef, key + "Item")
-    };
-  }
-  throw new Error("Unreacable code");
-}
-function defineObject(input: InputObjectDefinition, key: string){
-  return {
-    kind: "object" as const,
-    key,
-    type: defineModel(input.type)
+    index: api?.index ?? EMPTY_API_INDEX.index,
+    create: api?.create ?? EMPTY_API_INDEX.create,
+    read: api?.read ?? EMPTY_API_INDEX.read,
+    update: api?.update ?? EMPTY_API_INDEX.update,
+    delete: api?.delete ?? EMPTY_API_INDEX.delete,
   };
 }
 
-function isPrimitiveDefine(input: FieldDefinition): input is InputPrimitiveDefinition {
-  return 'type' in input && !Array.isArray(input.type);
+function definePrimitive(input: InputPrimitiveDefinition, key: string): PrimitiveDefinition {
+  return {
+    ...input,
+    key,
+    kind: 'primitive',
+    index: input.index ?? [],
+    api: normalizeAPIIndex(input.api),
+  };
 }
-function isArrayDefine(input: FieldDefinition): input is InputArrayDefinition {
-  return 'type' in input && Array.isArray(input);
+
+function defineObject(input: InputObjectDefinition, key: string) {
+  return {
+    kind: 'object' as const,
+    key,
+    type: defineModel(input.type),
+  };
 }
-function isObjectDefine(input: FieldDefinition): input is InputObjectDefinition {
-  return !('type' in input)
+
+function defineArray(input: InputArrayDefinition, key: string): ArrayDefinition {
+  const itemDefinition = input.type[0];
+
+  return {
+    kind: 'array',
+    key,
+    type: isPrimitiveDefinitionInput(itemDefinition)
+      ? definePrimitive(itemDefinition, `${key}Item`)
+      : defineObject(itemDefinition, `${key}Item`),
+  };
+}
+
+function isZodSchema(value: unknown): value is z.ZodTypeAny {
+  return value instanceof z.ZodType || (
+    typeof value === 'object' &&
+    value !== null &&
+    'safeParse' in value &&
+    typeof value.safeParse === 'function'
+  );
+}
+
+function isPrimitiveDefinitionInput(input: InputFieldDefinition): input is InputPrimitiveDefinition {
+  return isZodSchema(input.type);
+}
+
+function isArrayDefinitionInput(input: InputFieldDefinition): input is InputArrayDefinition {
+  return Array.isArray(input.type);
+}
+
+function normalizeFieldDefinition(input: InputFieldDefinition, key: string): NormalizedFieldDefinition {
+  if (isArrayDefinitionInput(input)) {
+    return defineArray(input, key);
+  }
+
+  if (isPrimitiveDefinitionInput(input)) {
+    return definePrimitive(input, key);
+  }
+
+  return defineObject(input, key);
 }
 
 export function defineModel<const T extends InputDefinition>(input: T): DefinitionFrom<T> {
-  const result: any = {};
+  const entries = Object.entries(input).map(([key, fieldDefinition]) => [
+    key,
+    normalizeFieldDefinition(fieldDefinition, key),
+  ]);
 
-  Object.keys(input).forEach((key)=>{
-    let fieldDef = input[key];
-    if(isPrimitiveDefine(fieldDef)){
-      result[key] = definePrimitive(fieldDef, key);
-    } else if(isArrayDefine(fieldDef)){
-      result[key] = defineArray(fieldDef, key);
-    } else if(isObjectDefine(fieldDef)){
-      result[key] = defineObject(fieldDef, key);
-    }
-  });
-
-  return result;
-};
+  return Object.fromEntries(entries) as DefinitionFrom<T>;
+}

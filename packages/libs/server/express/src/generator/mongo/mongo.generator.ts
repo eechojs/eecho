@@ -1,13 +1,8 @@
 import { ClientSession, Filter, FindOneAndUpdateOptions, MongoClient, ObjectId, UpdateFilter } from "mongodb";
 import { z } from 'zod';
 
-import { ViewDefinition, Context, Definition } from "@eecho/definition";
+import { DefinitionDocument, ViewDefinition, Definition, findRepositoryContext } from "@eecho/definition";
 import { extractSearchOption, extractSearchArrayOption, extractUpdateOption, extractCreateFieldWithSystem } from "@eecho/definition";
-
-// 타입 정의들
-type DefinitionDocument<T extends Definition> = {
-  [K in keyof T]: z.infer<T[K]['type']>;
-};
 
 // Create용 타입: Optional만 제외하고 System 포함
 type CreateDocument<T extends Definition> = {
@@ -189,9 +184,7 @@ export function genViewRepository<TDefinition extends ViewDefinition>(params: {
   const { definition, dbClient } = params;
 
   // Base Model 컨텍스트 찾기
-  const baseModelContext = Context.RepositoryContext.find(
-    (x) => x.model === definition.baseModel
-  );
+  const baseModelContext = findRepositoryContext(definition.baseModel);
   if (!baseModelContext) {
     throw new Error('BaseModel Not Registered');
   }
@@ -211,9 +204,7 @@ export function genViewRepository<TDefinition extends ViewDefinition>(params: {
 
   // Relation 정보들을 미리 계산
   const relationInfos = definition.relations.map((rel) => {
-    const relModelContext = Context.RepositoryContext.find(
-      (x) => x.model === rel.relationModel
-    );
+    const relModelContext = findRepositoryContext(rel.relationModel);
     if (!relModelContext) {
       throw new Error('Relation Model Not Registered');
     }

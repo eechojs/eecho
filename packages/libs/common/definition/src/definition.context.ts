@@ -1,6 +1,12 @@
 import { Definition } from "./model/model.define.type";
 
-interface Context {
+export interface RepositoryContextEntry {
+  model: Definition;
+  collectionName: string;
+  dbName: string;
+}
+
+interface DefinitionContext {
   RepositoryContext: {
     model: Definition;
     collectionName: string;
@@ -8,6 +14,14 @@ interface Context {
   }[];
 }
 
-export const Context: Context = {
+export const Context: DefinitionContext = {
   RepositoryContext: []
 };
+
+export function registerRepositoryContext(entry: RepositoryContextEntry) {
+  Context.RepositoryContext.push(entry);
+}
+
+export function findRepositoryContext(model: Definition) {
+  return Context.RepositoryContext.find((entry) => entry.model === model);
+}

@@ -7,7 +7,9 @@
     "doc": "docs"
   },
   "scripts": {
-    "example:pet-store:server": "npx ts-node ./examples/pestore/scripts/start --projectRoot=./examples/pestore/apps/api-server --main=./examples/pestore/apps/api-server/src/index.ts"
+    "dev:client": "cd apps/client && npm run dev",
+    "dev:server": "cd apps/server && npm run dev",
+    "test:e2e": "playwright test --config ./playwright.config.js"
   },
   "author": "eecho",
   "license": "MIT",
@@ -19,6 +21,7 @@
     "apps/*"
   ],
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "ts-node": "^10.9.2"
   },
   "dependencies": {

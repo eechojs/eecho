@@ -8,6 +8,8 @@ export type {
 export type { UpdateField as UpdateFields } from './definition.type';
 
 export { Context } from './definition.context';
+export { findRepositoryContext, registerRepositoryContext } from './definition.context';
+export type { RepositoryContextEntry } from './definition.context';
 
 export type { ClientAPISpecification, ServerAPISpecification} from './spec';
 

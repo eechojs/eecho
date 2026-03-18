@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Petstore Client</title>
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero">
+        <p class="eyebrow">Astro Client Rendering Demo</p>
+        <h1>Petstore Client</h1>
+        <p class="intro">
+          The pet list below is fetched on the client using the shared API definition and rendered after the page loads.
+        </p>
+      </section>
+
+      <section class="pets-panel">
+        <div class="panel-header">
+          <h2>Available Pets</h2>
+          <p>Powered by Astro + client-side API calls</p>
+        </div>
+
+        <div id="pets-list" class="pets-grid">
+          <p class="status-message">Loading pets from the server...</p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      import '../scripts/petstore-client.ts';
+    </script>
+  </body>
+</html>
+
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #f4f1e8;
+    --ink: #1f1a17;
+    --muted: #6f655f;
+    --panel: rgba(255, 251, 243, 0.88);
+    --line: rgba(76, 57, 46, 0.14);
+    --accent: #1e6f5c;
+    --accent-soft: rgba(30, 111, 92, 0.12);
+    --shadow: 0 20px 50px rgba(74, 52, 40, 0.12);
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Georgia, 'Times New Roman', serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at top left, rgba(218, 171, 120, 0.35), transparent 32%),
+      radial-gradient(circle at bottom right, rgba(30, 111, 92, 0.18), transparent 28%),
+      linear-gradient(180deg, #fbf7ef 0%, #f0eadc 100%);
+  }
+
+  .page-shell {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 72px 24px 96px;
+  }
+
+  .hero {
+    max-width: 760px;
+    margin-bottom: 36px;
+  }
+
+  .eyebrow {
+    margin: 0 0 12px;
+    font-size: 0.82rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+  }
+
+  .intro {
+    max-width: 56ch;
+    margin: 18px 0 0;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  .pets-panel {
+    padding: 28px;
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow);
+  }
+
+  .panel-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .panel-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+  }
+
+  .panel-header p {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .pets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+  }
+
+  .status-message {
+    margin: 0;
+    padding: 20px;
+    border-radius: 18px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  @media (max-width: 640px) {
+    .page-shell {
+      padding: 48px 16px 72px;
+    }
+
+    .pets-panel {
+      padding: 20px;
+      border-radius: 22px;
+    }
+  }
+</style>

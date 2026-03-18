@@ -1,4 +1,4 @@
-import { Context } from './definition.context';
+import { registerRepositoryContext } from './definition.context';
 import { Definition, PrimitiveDefinition } from './model/model.define.type';
 
 // Never permit directional m:n relation.
@@ -22,10 +22,9 @@ export function registerModel(params: {
   collectionName: string;
   dbName: string;
 }){
-  Context.RepositoryContext.push({
+  registerRepositoryContext({
     model: params.definition,
     collectionName: params.collectionName,
     dbName: params.dbName,
-  })
-  return;
-};
+  });
+}

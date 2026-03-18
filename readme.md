@@ -13,4 +13,7 @@ npm run example:pet-store:client
 
 # Shell 2
 npm run example:pet-store:server
+
+# E2E
+npm run example:pet-store:test
 ```
