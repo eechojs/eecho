@@ -1,4 +1,4 @@
-import { Definition } from "./model/model.define.type";
+import { Definition } from "./model/model.define.type.js";
 
 export interface RepositoryContextEntry {
   model: Definition;

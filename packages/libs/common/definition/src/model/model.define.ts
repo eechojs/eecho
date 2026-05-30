@@ -10,7 +10,7 @@ import {
   InputObjectDefinition,
   InputPrimitiveDefinition,
   PrimitiveDefinition,
-} from './model.define.type';
+} from './model.define.type.js';
 
 type InputFieldDefinition = InputPrimitiveDefinition | InputArrayDefinition | InputObjectDefinition;
 type NormalizedFieldDefinition = Definition[string];

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ArrayDefinition, ObjectDefinition, PrimitiveDefinition } from './model.define.type';
+import { ArrayDefinition, ObjectDefinition, PrimitiveDefinition } from './model.define.type.js';
 
 type PureType<T> = 
   T extends PrimitiveDefinition 

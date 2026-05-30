@@ -1,5 +1,5 @@
-import { registerRepositoryContext } from './definition.context';
-import { Definition, PrimitiveDefinition } from './model/model.define.type';
+import { registerRepositoryContext } from './definition.context.js';
+import { Definition, PrimitiveDefinition } from './model/model.define.type.js';
 
 // Never permit directional m:n relation.
 export interface ViewDefinition {

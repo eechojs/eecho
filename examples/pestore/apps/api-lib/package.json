@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@eecho/definition": "*",
-    "@eecho/api-client": "*"
+    "@eecho/api-client": "*",
+    "zod": "^4.1.12"
   }
 }

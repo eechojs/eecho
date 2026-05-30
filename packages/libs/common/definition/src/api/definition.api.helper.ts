@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Definition, PrimitiveDefinition } from '../model/model.define.type';
+import { Definition, PrimitiveDefinition } from '../model/model.define.type.js';
 
 type APISection = 'create' | 'read' | 'update';
 type PrimitiveEntry<TDefinition extends Definition> = [

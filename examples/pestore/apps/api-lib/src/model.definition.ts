@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { defineModel } from '@eecho/definition'
+import { defineModel, type ModelDocument } from '@eecho/definition'
 
 export const PetDefinition = defineModel({
   _id: {
@@ -86,12 +86,6 @@ export const OrderDefinition = defineModel({
   },
 });
 
-export type Pet = {
-  [K in keyof typeof PetDefinition]: z.infer<typeof PetDefinition[K]['type']>;
-}
-export type PetToy = {
-  [K in keyof typeof PetToyDefinition]: z.infer<typeof PetDefinition[K]['type']>;
-}
-export type Order = {
-  [K in keyof typeof OrderDefinition]: z.infer<typeof OrderDefinition[K]['type']>;
-}
+export type Pet = ModelDocument<typeof PetDefinition>;
+export type PetToy = ModelDocument<typeof PetToyDefinition>;
+export type Order = ModelDocument<typeof OrderDefinition>;

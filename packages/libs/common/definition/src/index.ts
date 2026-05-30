@@ -1,17 +1,19 @@
 export type {
   DefinitionDocument,
+  DefinitionValue,
   IdentifierField,
+  ModelDocument,
   SearchField,
   UpdateField,
-} from './definition.type';
+} from './definition.type.js';
 
-export type { UpdateField as UpdateFields } from './definition.type';
+export type { UpdateField as UpdateFields } from './definition.type.js';
 
-export { Context } from './definition.context';
-export { findRepositoryContext, registerRepositoryContext } from './definition.context';
-export type { RepositoryContextEntry } from './definition.context';
+export { Context } from './definition.context.js';
+export { findRepositoryContext, registerRepositoryContext } from './definition.context.js';
+export type { RepositoryContextEntry } from './definition.context.js';
 
-export type { ClientAPISpecification, ServerAPISpecification} from './spec';
+export type { ClientAPISpecification, ServerAPISpecification} from './spec.js';
 
 export {
   extractCreateRequiredField,
@@ -21,12 +23,19 @@ export {
   extractSearchArrayOption,
   extractSortableOption,
   extractObjectIdFields
-} from './api/definition.api.helper';
+} from './api/definition.api.helper.js';
 
 export {
   extractCreateFieldWithSystem
-} from './repository/definition.repository.helper';
+} from './repository/definition.repository.helper.js';
 
-export { defineModel } from './model/model.define';
-export type { Definition } from './model/model.define.type';
-export type { ViewDefinition } from './view.definition';
+export { defineModel } from './model/model.define.js';
+export type {
+  Definition,
+  DefinitionFrom,
+  InputArrayDefinition,
+  InputDefinition,
+  InputObjectDefinition,
+  InputPrimitiveDefinition,
+} from './model/model.define.type.js';
+export type { ViewDefinition } from './view.definition.js';

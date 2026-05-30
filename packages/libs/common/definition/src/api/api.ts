@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { Definition } from "../model/model.define.type";
-import { ServerAPISpecification } from "../spec";
+import type { Definition } from "../model/model.define.type.js";
+import type { ServerAPISpecification } from "../spec.js";
 
 
 

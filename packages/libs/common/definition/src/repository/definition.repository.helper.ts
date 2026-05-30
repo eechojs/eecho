@@ -1,4 +1,4 @@
-import { Definition, PrimitiveDefinition, APIIndex } from '../model/model.define.type';
+import { Definition, PrimitiveDefinition, APIIndex } from '../model/model.define.type.js';
 
 export function extractCreateFieldWithSystem<TDefinition extends Definition>(params: { definition: TDefinition }) {
   const { definition } = params;

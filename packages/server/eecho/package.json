@@ -1,6 +1,6 @@
 {
   "name": "@eecho/server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "EEcho server framework with Express and MongoDB support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

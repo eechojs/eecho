@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Definition, PrimitiveDefinition, PrimitiveIndex, APIIndex } from './model/model.define.type';
+import type { Definition, PrimitiveDefinition, PrimitiveIndex, APIIndex } from './model/model.define.type.js';
 
 type InferDefinitionValue<TField> =
   TField extends { kind: 'primitive'; type: infer TSchema extends z.ZodTypeAny }
@@ -41,6 +41,8 @@ export type DefinitionValue<TField> = InferDefinitionValue<TField>;
 export type DefinitionDocument<T extends Definition> = {
   [K in keyof T]: DefinitionValue<T[K]>;
 };
+
+export type ModelDocument<T extends Definition> = DefinitionDocument<T>;
 
 export type UpdateField<T extends Definition> = {
   [K in PrimitiveKeysWithApiFlag<T, 'update', 'Updatable'>]?: DefinitionValue<T[K]>;
