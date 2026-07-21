@@ -1,42 +1,56 @@
-import { APIExceptionHandler, FetchExceptionContext } from "./client";
+import type { APIExceptionHandler, FetchExceptionContext } from './client.js';
 
-export function createRetryHandler(p: { timeout?: number; retryCount: number }): APIExceptionHandler {
-  return async (ctx: FetchExceptionContext) => {
-    const status = ctx.response?.status;
-    const shouldRetry =
-      ctx.response == null ||
-      status === 429 ||
-      (status != null && status >= 500 && status <= 599);
+const wait = (delayMs: number) => new Promise((resolve) => setTimeout(resolve, delayMs));
 
-    if (!shouldRetry) {
+function isRetryable(response?: Response) {
+  if (!response) {
+    return true;
+  }
+
+  return response.status === 429 || response.status >= 500;
+}
+
+export function createRetryHandler(options: {
+  timeout?: number;
+  retryCount: number;
+}): APIExceptionHandler {
+  const { retryCount, timeout: delayMs = 1_000 } = options;
+
+  if (!Number.isInteger(retryCount) || retryCount < 0) {
+    throw new RangeError('retryCount must be a non-negative integer.');
+  }
+
+  if (delayMs < 0) {
+    throw new RangeError('timeout must be non-negative.');
+  }
+
+  return async (context: FetchExceptionContext) => {
+    if (!isRetryable(context.response) || context.options.signal?.aborted) {
       return { isNext: true };
     }
 
-    const retryUrl = ctx.requestUrl;
-    if (!retryUrl) {
-      return { isNext: true };
-    }
+    let latestResponse: Response | undefined;
 
-    const delayMs = p.timeout ?? 1000;
+    for (let attempt = 0; attempt < retryCount; attempt += 1) {
+      await wait(delayMs);
 
-    for (let attempt = 1; attempt <= p.retryCount; attempt++) {
-      await new Promise((r) => setTimeout(r, delayMs));
-
-      const signal =
-        (ctx.options.signal as AbortSignal | undefined)?.aborted
-          ? undefined
-          : ctx.options.signal;
+      if (context.options.signal?.aborted) {
+        return { isNext: true };
+      }
 
       try {
-        const retryRes = await fetch(retryUrl, { ...ctx.options, signal });
+        latestResponse = await fetch(context.requestUrl, context.options);
 
-        if (retryRes.ok) {
-          return { result: retryRes, isNext: false };
+        if (latestResponse.ok || !isRetryable(latestResponse)) {
+          return { result: latestResponse, isNext: false };
         }
-      } catch (err) {
+      } catch {
+        latestResponse = undefined;
       }
     }
 
-    return { isNext: false };
+    return latestResponse
+      ? { result: latestResponse, isNext: false }
+      : { isNext: true };
   };
 }

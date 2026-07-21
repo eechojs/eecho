@@ -13,8 +13,16 @@ export default defineConfig({
     port: 3000,
   },
   vite: {
+    optimizeDeps: {
+      noDiscovery: true,
+      include: ['qs'],
+    },
     resolve: {
       alias: [
+        {
+          find: '@pestore/api-lib',
+          replacement: path.resolve(currentDirectory, '../api-lib/src/index.ts'),
+        },
         {
           find: '@eecho/definition',
           replacement: path.resolve(currentDirectory, '../../../../packages/libs/common/definition/src/index.ts'),

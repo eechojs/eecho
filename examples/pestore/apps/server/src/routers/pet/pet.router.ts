@@ -1,27 +1,15 @@
 import { Router } from "express";
-import { setAPIEndpoint } from "@eecho/express";
-import { PetAPISpecs, PetRepository } from "./pet.definition";
+import { registerMongoReadEndpoint } from "@eecho/express";
+import { PetAPIDefinition } from '@pestore/api-lib';
+
+import { PetRepository } from './pet.definition.js';
 
 const router = Router();
 
-setAPIEndpoint({
+registerMongoReadEndpoint({
   router,
-  apiEndpoint: "/pet/getItems",
-  method: "GET",
-  apiSpec: PetAPISpecs.ReadAPISpecification,
-  handler: async ({ res, params }) => {
-    const { page, limit } = params.query;
-    
-    const pets = await PetRepository.getItems({ page, limit });
-    const result = {
-      success: true,
-      data: pets
-    } as const;
-
-    res.json(result);
-
-    return result;
-  }
+  apiSpec: PetAPIDefinition.ReadAPISpecification,
+  repository: PetRepository,
 });
 
 export default router;

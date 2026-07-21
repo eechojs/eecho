@@ -1,7 +1,7 @@
 {
   "name": "@eecho/definition",
   "version": "0.0.3",
-  "description": "EEcho API definition types and schemas",
+  "description": "EEcho model definitions and shared runtime API contracts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -21,7 +21,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "peerDependencies": {
     "zod": "^4.1.12"
   },

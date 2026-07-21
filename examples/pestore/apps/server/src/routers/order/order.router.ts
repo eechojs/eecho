@@ -1,28 +1,15 @@
 import { Router } from "express";
-import { setAPIEndpoint } from "@eecho/express";
+import { registerMongoReadEndpoint } from "@eecho/express";
+import { OrderAPIDefinition } from '@pestore/api-lib';
 
-import { OrderAPISpecs, OrderRepository } from "./order.definition";
+import { OrderRepository } from './order.definition.js';
 
 const router = Router();
 
-setAPIEndpoint({
+registerMongoReadEndpoint({
   router,
-  apiEndpoint: "/order/getItems",
-  method: "GET",
-  apiSpec: OrderAPISpecs.ReadAPISpecification,
-  handler: async ({ res, params }) => {
-    const { page, limit } = params.query;
-    
-    const pets = await OrderRepository.getItems({ page, limit });
-    const result = {
-      success: true,
-      data: pets
-    } as const;
-
-    res.json(result);
-
-    return result;
-  }
+  apiSpec: OrderAPIDefinition.ReadAPISpecification,
+  repository: OrderRepository,
 });
 
 export default router;

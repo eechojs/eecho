@@ -4,6 +4,7 @@ export type {
   IdentifierField,
   ModelDocument,
   SearchField,
+  SortField,
   UpdateField,
 } from './definition.type.js';
 
@@ -13,10 +14,16 @@ export { Context } from './definition.context.js';
 export { findRepositoryContext, registerRepositoryContext } from './definition.context.js';
 export type { RepositoryContextEntry } from './definition.context.js';
 
-export type { ClientAPISpecification, ServerAPISpecification} from './spec.js';
+export type {
+  APISpecification,
+  ClientAPISpecification,
+  ServerAPISpecification,
+} from './spec.js';
+export { genAPIDefinition } from './api/api.js';
 
 export {
   extractCreateRequiredField,
+  extractReadableField,
   extractReadbleField,
   extractUpdateOption,
   extractSearchOption,
@@ -30,6 +37,7 @@ export {
 } from './repository/definition.repository.helper.js';
 
 export { defineModel } from './model/model.define.js';
+export { registerModel } from './view.definition.js';
 export type {
   Definition,
   DefinitionFrom,

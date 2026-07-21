@@ -1,16 +1,14 @@
 {
   "name": "pestore-server",
   "version": "0.0.1",
-  "description": "a framework for declarative server applications",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "private": true,
+  "type": "module",
+  "description": "Express and MongoDB server for the EEcho petstore example",
+  "main": "dist/main.js",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
-    "dev:tsc": "concurrently --names \"TSC,SRV\" --prefix-colors \"cyan,green\" \"tsc --build --watch\" \"sleep 3 && nodemon dist/main.js\"",
-    "dev:build": "tsc --build --watch",
-    "build": "tsc",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "dev": "tsx watch --tsconfig tsconfig.json src/main.ts",
+    "build": "npm run clean && npm run build --workspace @pestore/api-lib && tsc -p tsconfig.build.json",
     "start": "node dist/main.js"
   },
   "author": "Cogi",
@@ -19,20 +17,16 @@
     "type": "git",
     "url": "https://github.com/eecho/eechojs.git"
   },
-  "workspaces": [
-    "apps/*"
-  ],
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.5",
-    "concurrently": "^9.2.1",
     "mongodb-memory-server": "^10.1.2",
-    "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2"
+    "tsx": "^4.20.6",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@eecho/definition": "*",
-    "@eecho/server": "*",
+    "@eecho/express": "*",
+    "@pestore/api-lib": "*",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "mongodb": "^6.20.0"

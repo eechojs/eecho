@@ -12,7 +12,7 @@ type InferDefinitionValue<TField> =
 
 type PrimitiveKeysWithIndexFlag<TDefinition extends Definition, TFlag extends PrimitiveIndex> = {
   [K in keyof TDefinition]:
-    TDefinition[K] extends PrimitiveDefinition<any, infer TIndices>
+    TDefinition[K] extends PrimitiveDefinition<z.ZodTypeAny, infer TIndices>
       ? TFlag extends TIndices[number]
         ? K
         : never
@@ -25,7 +25,7 @@ type PrimitiveKeysWithApiFlag<
   TFlag extends string
 > = {
   [K in keyof TDefinition]:
-    TDefinition[K] extends PrimitiveDefinition<any, any, infer TApi>
+    TDefinition[K] extends PrimitiveDefinition<z.ZodTypeAny, readonly PrimitiveIndex[], infer TApi>
       ? TApi[TSection] extends readonly unknown[]
         ? TFlag extends TApi[TSection][number]
           ? K
@@ -33,8 +33,6 @@ type PrimitiveKeysWithApiFlag<
         : never
       : never;
 }[keyof TDefinition];
-
-type SearchInput<TValue> = TValue extends string ? TValue | TValue[] : TValue;
 
 export type DefinitionValue<TField> = InferDefinitionValue<TField>;
 
@@ -49,7 +47,13 @@ export type UpdateField<T extends Definition> = {
 };
 
 export type SearchField<T extends Definition> = {
-  [K in PrimitiveKeysWithApiFlag<T, 'read', 'Searchable'>]?: SearchInput<DefinitionValue<T[K]>>;
+  [K in PrimitiveKeysWithApiFlag<T, 'read', 'Searchable'>]?: DefinitionValue<T[K]>;
+} & {
+  [K in PrimitiveKeysWithApiFlag<T, 'read', 'SearchableArray'>]?: DefinitionValue<T[K]>[];
+};
+
+export type SortField<T extends Definition> = {
+  [K in PrimitiveKeysWithApiFlag<T, 'read', 'Sortable'>]?: 'asc' | 'desc';
 };
 
 export type IdentifierField<T extends Definition> = {

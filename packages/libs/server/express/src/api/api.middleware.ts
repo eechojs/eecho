@@ -1,19 +1,37 @@
-import { z } from "zod";
-import { NextFunction, Request as ExpressRequest, Response as ExpressResponse } from "express";
+import type { NextFunction, Request, Response } from 'express';
+import { ZodError } from 'zod';
 
-type ExpressExceptionMiddleware = (err: Error, req: ExpressRequest, res: ExpressResponse, next: NextFunction) => void;
+type ExpressExceptionMiddleware = (
+  error: Error,
+  request: Request,
+  response: Response,
+  next: NextFunction,
+) => void;
 
-export const ExceptionMiddleware: ExpressExceptionMiddleware = (err, req, res, next) => {
-  console.error('API Exception occurred', {
-    method: req.method,
-    url: req.originalUrl,
-    userAgent: req.get('User-Agent'),
-    ip: req.ip,
-    error: err
+export const ExceptionMiddleware: ExpressExceptionMiddleware = (error, request, response, _next) => {
+  if (error instanceof ZodError) {
+    response.status(400).json({
+      success: false,
+      error: {
+        code: 'INVALID_REQUEST',
+        issues: error.issues.map(({ code, message, path }) => ({ code, message, path })),
+      },
+    });
+    return;
+  }
+
+  console.error('API exception occurred', {
+    method: request.method,
+    url: request.originalUrl,
+    userAgent: request.get('User-Agent'),
+    ip: request.ip,
+    error,
   });
 
-  return res.status(500).json({
+  response.status(500).json({
     success: false,
-    message: "EXCEPTION_MIDDLEWARE_UNKNOWN_ERROR"
+    error: {
+      code: 'INTERNAL_SERVER_ERROR',
+    },
   });
 };

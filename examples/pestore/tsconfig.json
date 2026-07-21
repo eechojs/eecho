@@ -12,18 +12,16 @@
       "@eecho/definition/*": ["../../packages/libs/common/definition/src/*"],
       "@eecho/api-client": ["../../packages/libs/client/api-client/src/index.ts"],
       "@eecho/api-client/*": ["../../packages/libs/client/api-client/src/*"],
-      "@eecho/server": ["../../packages/server/eecho/src/index.ts"],
-      "@eecho/server/*": ["../../packages/server/eecho/src/*"],
-
-      "@petstore/api-lib": ["apps/api-lib/src/index.ts"],
+      "@eecho/express": ["../../packages/libs/server/express/src/index.ts"],
+      "@eecho/express/*": ["../../packages/libs/server/express/src/*"],
+      "@pestore/api-lib": ["apps/api-lib/src/index.ts"],
     },
     "outDir": "dist"
   },
   "include": [
     "../../packages/libs/common/definition/src/**/*",
     "../../packages/libs/client/api-client/src/**/*",
-    "../../packages/server/eecho/src/**/*",
+    "../../packages/libs/server/express/src/**/*",
     "apps/*/src/**/*"
   ]
 }
-

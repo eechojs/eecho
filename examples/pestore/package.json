@@ -1,7 +1,8 @@
 {
   "name": "petstore",
   "version": "0.0.1",
-  "description": "a framework for declarative server applications",
+  "private": true,
+  "description": "End-to-end example for shared EEcho API contracts",
   "main": "index.js",
   "directories": {
     "doc": "docs"
@@ -21,8 +22,7 @@
     "apps/*"
   ],
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "ts-node": "^10.9.2"
+    "@playwright/test": "^1.58.2"
   },
   "dependencies": {
   }

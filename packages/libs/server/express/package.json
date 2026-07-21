@@ -1,9 +1,15 @@
 {
   "name": "@eecho/express",
   "version": "0.0.3",
-  "description": "EEcho express framework with Express and MongoDB support",
+  "description": "Express and MongoDB adapters for shared EEcho API contracts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "type": "module",
   "files": [
     "dist/**/*"
@@ -15,9 +21,9 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
-    "@eecho/definition": "^0.0.2",
+    "@eecho/definition": "^0.0.3",
     "express": "^5.1.0",
     "mongodb": "^6.20.0",
     "zod": "^4.1.12"

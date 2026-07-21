@@ -1,6 +1,6 @@
-import { z } from "zod";
+import type { z } from 'zod';
 
-interface APISpecification {
+export interface APISpecification {
   APIEndpoint: string;
   Method: "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
   Request: {
@@ -12,7 +12,7 @@ interface APISpecification {
   };
 }
 
-export interface ClientAPISpecification extends APISpecification{
+export interface ClientAPISpecification extends APISpecification {
   operationId: string;
 }
 

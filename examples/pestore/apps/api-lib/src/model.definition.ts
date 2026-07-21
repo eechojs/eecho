@@ -24,21 +24,29 @@ export const PetDefinition = defineModel({
   species: {
     type: z.enum(["Dog", "Cat"]),
     api: {
-      read: ["Searchable"]
+      read: ["Searchable", "Sortable"],
+      update: ['Updatable'],
     }
   },
   breed: {
     type: z.string(),
     api: {
-      read: ["Searchable"]
+      read: ["Searchable", "Sortable"],
+      update: ['Updatable'],
     }
   },
   birthDate: {
     type: z.coerce.date(),
+    api: {
+      update: ['Updatable'],
+    },
   },
 
   description: {
     type: z.string(),
+    api: {
+      update: ['Updatable'],
+    },
   },
 });
 
@@ -75,14 +83,19 @@ export const OrderDefinition = defineModel({
   },
 
   orderType: {
-    type: z.enum(['Adot', 'Toy']),
+    type: z.enum(['Adopt', 'Toy']),
     api: {
-      read: ["Searchable"]
+      read: ["Searchable", "Sortable"],
+      update: ['Updatable'],
     }
   },
 
   notes: {
     type: z.string().optional(),
+    api: {
+      create: ['Optional'],
+      update: ['Updatable'],
+    },
   },
 });
 

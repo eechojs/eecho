@@ -1,33 +1,26 @@
 {
-  "name": "pestore-lib",
+  "name": "@pestore/api-lib",
   "version": "0.0.1",
-  "description": "a framework for declarative server applications",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "scripts": {
-    "test:core": "jest --config libs/core/test/unit/jest-unit.json",
-    "build:client": "",
-    "build:client:watch": "npx ts-node ./scripts/build-watch.client",
-    "start:server": "npx ts-node ./scripts/start --projectRoot=./packages/server --main=./packages/server/src/index.ts",
-    "start:server:watch": "npx ts-node ./scripts/start-watch",
-    "start:cli": "npx ts-node ./scripts/start --projectRoot=./packages/cli --main=./packages/cli/src/main.ts"
-  },
-  "author": "Cogi",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/eecho/eechojs.git"
-  },
-  "workspaces": [
-    "apps/*"
-  ],
-  "devDependencies": {
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@eecho/definition": "*",
     "@eecho/api-client": "*",
+    "@eecho/definition": "*",
     "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
   }
 }

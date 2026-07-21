@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Definition, PrimitiveDefinition } from '../model/model.define.type.js';
+import { Definition, PrimitiveDefinition, PrimitiveIndex } from '../model/model.define.type.js';
 
 type APISection = 'create' | 'read' | 'update';
 type PrimitiveEntry<TDefinition extends Definition> = [
@@ -17,8 +17,14 @@ type OptionalSchemaMap<TShape extends Record<string, z.ZodTypeAny>> = {
 };
 
 type OptionalArraySchemaMap<TShape extends Record<string, z.ZodTypeAny>> = {
-  [K in keyof TShape]: z.ZodOptional<z.ZodArray<z.ZodOptional<TShape[K]>>>;
+  [K in keyof TShape]: z.ZodOptional<z.ZodArray<TShape[K]>>;
 };
+
+type SortSchemaMap<TDefinition extends Definition, TKeys extends keyof TDefinition> = {
+  [K in TKeys]: z.ZodOptional<typeof sortDirectionSchema>;
+};
+
+const sortDirectionSchema = z.enum(['asc', 'desc']);
 
 type PrimitiveKeysWithApiFlag<
   TDefinition extends Definition,
@@ -26,7 +32,7 @@ type PrimitiveKeysWithApiFlag<
   TFlag extends string
 > = {
   [K in keyof TDefinition]:
-    TDefinition[K] extends PrimitiveDefinition<any, any, infer TApi>
+    TDefinition[K] extends PrimitiveDefinition<z.ZodTypeAny, readonly PrimitiveIndex[], infer TApi>
       ? TApi[TSection] extends readonly unknown[]
         ? TFlag extends TApi[TSection][number]
           ? K
@@ -41,7 +47,7 @@ type PrimitiveKeysWithoutApiFlags<
   TFlags extends readonly string[]
 > = {
   [K in keyof TDefinition]:
-    TDefinition[K] extends PrimitiveDefinition<any, any, infer TApi>
+    TDefinition[K] extends PrimitiveDefinition<z.ZodTypeAny, readonly PrimitiveIndex[], infer TApi>
       ? TApi[TSection] extends readonly unknown[]
         ? Extract<TFlags[number], TApi[TSection][number]> extends never
           ? K
@@ -52,7 +58,7 @@ type PrimitiveKeysWithoutApiFlags<
 
 type PrimitiveKeysWithIndexFlag<TDefinition extends Definition, TFlag extends string> = {
   [K in keyof TDefinition]:
-    TDefinition[K] extends PrimitiveDefinition<any, infer TIndex>
+    TDefinition[K] extends PrimitiveDefinition<z.ZodTypeAny, infer TIndex>
       ? TFlag extends TIndex[number]
         ? K
         : never
@@ -103,7 +109,7 @@ export function extractCreateRequiredField<TDefinition extends Definition>(param
   >;
 }
 
-export function extractReadbleField<TDefinition extends Definition>(params: { definition: TDefinition }) {
+export function extractReadableField<TDefinition extends Definition>(params: { definition: TDefinition }) {
   const readableFields = pickPrimitiveSchemaShape(
     params.definition,
     (field) => !hasAnyAPIFlag(field, 'read', ['Hidden', 'Detail']),
@@ -114,6 +120,9 @@ export function extractReadbleField<TDefinition extends Definition>(params: { de
     PrimitiveKeysWithoutApiFlags<TDefinition, 'read', ['Hidden', 'Detail']>
   >;
 }
+
+// Keep the original misspelled export so existing consumers can migrate without a breaking release.
+export const extractReadbleField = extractReadableField;
 
 export function extractUpdateOption<TDefinition extends Definition>(params: { definition: TDefinition }) {
   const updatableFields = pickPrimitiveSchemaShape(
@@ -143,7 +152,7 @@ export function extractSearchArrayOption<TDefinition extends Definition>(params:
   const searchableArrayFields = pickPrimitiveSchemaShape(
     params.definition,
     (field) => hasAPIFlag(field, 'read', 'SearchableArray'),
-    (schema) => schema.optional().array().optional(),
+    (schema) => z.array(schema).optional(),
   );
 
   return searchableArrayFields as OptionalArraySchemaMap<
@@ -155,11 +164,12 @@ export function extractSortableOption<TDefinition extends Definition>(params: { 
   const sortableFields = pickPrimitiveSchemaShape(
     params.definition,
     (field) => hasAPIFlag(field, 'read', 'Sortable'),
-    (schema) => schema.optional(),
+    () => sortDirectionSchema.optional(),
   );
 
-  return sortableFields as OptionalSchemaMap<
-    PrimitiveSchemaMap<TDefinition, PrimitiveKeysWithApiFlag<TDefinition, 'read', 'Sortable'>>
+  return sortableFields as SortSchemaMap<
+    TDefinition,
+    PrimitiveKeysWithApiFlag<TDefinition, 'read', 'Sortable'>
   >;
 }
 

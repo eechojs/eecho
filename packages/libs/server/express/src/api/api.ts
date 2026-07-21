@@ -1,42 +1,50 @@
-import { Router, Request as ExpressRequest, Response as ExpressResponse, NextFunction } from "express";
-import { ServerAPISpecification } from "@eecho/definition";
+import type { NextFunction, Request as ExpressRequest, Response as ExpressResponse, Router } from 'express';
 
-import type { APIHandler, ExpressMiddleware, ExtractBodyParams, ExtractQueryParams } from "./api.type";
-import { parseRequestParams, registerRoute } from "./api.util";
+import type { ServerAPISpecification } from '@eecho/definition';
 
-export const setMiddleware = <TResult>(fn: ExpressMiddleware<TResult>) => {
-  return (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
-    return Promise.resolve(fn(req, res, next)).catch(next);
+import type { APIHandler, ExpressMiddleware } from './api.type.js';
+import { parseRequestParams, registerRoute } from './api.util.js';
+
+export function setMiddleware<TResult>(middleware: ExpressMiddleware<TResult>) {
+  return (request: ExpressRequest, response: ExpressResponse, next: NextFunction) => {
+    return Promise.resolve(middleware(request, response, next)).catch(next);
   };
-};
+}
 
-export const setAPIEndpoint = <TSpec extends ServerAPISpecification>(
-  input: {
-    router: Router;
-    apiEndpoint: TSpec['APIEndpoint'];
-    method: TSpec['Method'];
-    middlewares?: ExpressMiddleware[];
-    apiSpec: TSpec;
-    handler: APIHandler<TSpec>;
-  },
-) => {
-  const { router, middlewares = [], apiSpec, handler } = input;
-  const { APIEndpoint, Method, Request } = apiSpec;
+export function setAPIEndpoint<TSpec extends ServerAPISpecification>(input: {
+  router: Router;
+  apiSpec: TSpec;
+  handler: APIHandler<TSpec>;
+  middlewares?: ExpressMiddleware[];
+  apiEndpoint?: TSpec['APIEndpoint'];
+  method?: TSpec['Method'];
+}) {
+  const {
+    router,
+    apiSpec,
+    handler,
+    middlewares = [],
+    apiEndpoint = apiSpec.APIEndpoint,
+    method = apiSpec.Method,
+  } = input;
 
-  const apiMiddleware = setMiddleware((req, res, next) => {
-    const { queryParams, bodyParams } = parseRequestParams(req, Request);
-    
-    return handler({ 
-      req, 
-      res, 
-      next, 
+  if (apiEndpoint !== apiSpec.APIEndpoint || method !== apiSpec.Method) {
+    throw new Error('Route endpoint and method must match the API specification.');
+  }
+
+  const apiMiddleware = setMiddleware((request, response, next) => {
+    const { queryParams, bodyParams } = parseRequestParams<TSpec>(request, apiSpec.Request);
+
+    return handler({
+      req: request,
+      res: response,
+      next,
       params: {
-        query: queryParams as ExtractQueryParams<TSpec>,
-        body: bodyParams as ExtractBodyParams<TSpec>
-      }
+        query: queryParams,
+        body: bodyParams,
+      },
     });
   });
 
-  const allMiddlewares = [...middlewares, apiMiddleware];
-  registerRoute(router, Method, APIEndpoint, allMiddlewares);
-};
+  registerRoute(router, method, apiEndpoint, [...middlewares, apiMiddleware]);
+}

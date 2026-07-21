@@ -1,118 +1,157 @@
-type SimpleInit = Omit<RequestInit, "headers"> & {
-  headers?: { [key: string]: string };
+type RequestOptions = Omit<RequestInit, 'headers'> & {
+  headers?: Record<string, string>;
 };
 
 export interface FetchExceptionContext {
-  errorType: "FetchException";
+  errorType: 'FetchException';
   requestUrl: string;
   response?: Response;
   options: RequestInit;
   timestamp: Date;
+  cause?: unknown;
 }
 
-export type APIExceptionHandler =
-  (ctx: FetchExceptionContext) => Promise<{ result?: Response; isNext: boolean }>;
+export type APIExceptionHandler = (
+  context: FetchExceptionContext,
+) => Promise<{ result?: Response; isNext: boolean }>;
 
-  export type RequestHandler = (p: {url: string, options: SimpleInit}) => Promise<{ url: string; options: SimpleInit }>;
+export type RequestHandler = (request: {
+  url: string;
+  options: RequestOptions;
+}) => Promise<{ url: string; options: RequestOptions }>;
 
 class FetchException extends Error implements FetchExceptionContext {
-  errorType: "FetchException" = "FetchException";
-  requestUrl: string;
-  response?: Response;
-  options: RequestInit
-  timestamp: Date;
-  
-  constructor(public ctx: FetchExceptionContext) {
-    super(`Fetch error: ${ctx.errorType} at ${ctx.timestamp.toISOString()}`);
-    this.requestUrl = ctx.requestUrl;
-    this.response = ctx.response;
-    this.options = ctx.options;
-    this.timestamp = ctx.timestamp;
+  readonly name = 'FetchException';
+  readonly errorType = 'FetchException';
+  readonly requestUrl: string;
+  readonly response?: Response;
+  readonly options: RequestInit;
+  readonly timestamp: Date;
+  readonly cause?: unknown;
+
+  constructor(context: FetchExceptionContext) {
+    const status = context.response ? ` (${context.response.status})` : '';
+    super(`Fetch failed for ${context.requestUrl}${status}`);
+
+    this.requestUrl = context.requestUrl;
+    this.response = context.response;
+    this.options = context.options;
+    this.timestamp = context.timestamp;
+    this.cause = context.cause;
   }
+}
+
+function resolveRequestUrl(host: string, url: string) {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  if (!host) {
+    throw new Error(`Cannot resolve relative request URL without a host: ${url}`);
+  }
+
+  const normalizedHost = host.replace(/\/$/, '');
+  const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+  return `${normalizedHost}${normalizedPath}`;
+}
+
+async function runExceptionHandlers(
+  exception: FetchException,
+  handlers: readonly APIExceptionHandler[],
+) {
+  for (const handler of handlers) {
+    const { result, isNext } = await handler(exception);
+
+    if (!isNext) {
+      if (result) {
+        return result;
+      }
+
+      throw exception;
+    }
+  }
+
+  throw exception;
 }
 
 export function createHttpClient() {
-  let __host = "";
-  let __headers: Record<string, string> = {};
-  let __requestHandlers: RequestHandler[] = [];
-  let __apiExceptionHandlers: APIExceptionHandler[] = [];
-
-  async function runHandlers(ctx: FetchException) {
-    if (__apiExceptionHandlers.length === 0) throw ctx;
-    for (const handler of __apiExceptionHandlers) {
-      const { result, isNext } = await handler(ctx);
-      if (!isNext) return result;
-    }
-    throw ctx;
-  }
+  let host = '';
+  let headers: Record<string, string> = {};
+  const requestHandlers: RequestHandler[] = [];
+  const exceptionHandlers: APIExceptionHandler[] = [];
 
   return {
-    setHost(url: string) { __host = url; },
-    setHeader(header: Record<string, string>) { __headers = header; },
+    setHost(url: string) {
+      host = url;
+    },
+    setHeader(nextHeaders: Record<string, string>) {
+      headers = { ...nextHeaders };
+    },
     addRequestHandler(handler: RequestHandler) {
-      __requestHandlers.push(handler);
+      requestHandlers.push(handler);
     },
     addExceptionHandler(handler: APIExceptionHandler) {
-      __apiExceptionHandlers.push(handler);
+      exceptionHandlers.push(handler);
     },
 
-    get host() { return __host; },
-    get headers() { return __headers; },
-    get apiExceptionHandlers() { return __apiExceptionHandlers; },
+    get host() {
+      return host;
+    },
+    get headers() {
+      return { ...headers };
+    },
+    get apiExceptionHandlers() {
+      return [...exceptionHandlers];
+    },
 
-    async fetch(p: { url: string; options?: SimpleInit }) {
-      let { url, options = {} } = p;
-
-      const combinedHeaders: Record<string, string> = {
-        ...__headers,
-        ...(options.headers ?? {}),
+    async fetch(input: { url: string; options?: RequestOptions }) {
+      let request: { url: string; options: RequestOptions } = {
+        url: input.url,
+        options: {
+          ...input.options,
+          headers: {
+            ...headers,
+            ...input.options?.headers,
+          },
+        },
       };
 
-      options = { ...options, headers: combinedHeaders };
-
-      for (const handler of __requestHandlers) {
-        const next = await handler({ url, options });
-        url = next.url;
-        options = next.options;
+      for (const handler of requestHandlers) {
+        request = await handler(request);
       }
 
-      const fullUrl = (() => {
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-          return url;
-        }
-        
-        if (url.startsWith('/')) {
-          const hostUrl = new URL(__host);
-          return `${hostUrl.origin}${hostUrl.pathname.replace(/\/$/, '')}${url}`;
-        }
-        
-        const normalizedHost = __host.endsWith('/') ? __host.slice(0, -1) : __host;
-        const normalizedUrl = url.startsWith('/') ? url : `/${url}`;
-        return `${normalizedHost}${normalizedUrl}`;
-      })();
+      const requestUrl = resolveRequestUrl(host, request.url);
+      let response: Response;
 
       try {
-        const res = await fetch(fullUrl, options);
-        if (res.ok) return res;
-
-        const ctx = new FetchException({
-          errorType: "FetchException",
-          requestUrl: fullUrl,
-          response: res,
-          options,
-          timestamp: new Date(),
-        });
-
-        return await runHandlers(ctx);
-      } catch (err) {
-        const netCtx = new FetchException({
-          errorType: "FetchException",
-          requestUrl: fullUrl,
-          options,
-          timestamp: new Date(),
-        });
-        return await runHandlers(netCtx);
+        response = await fetch(requestUrl, request.options);
+      } catch (cause) {
+        return runExceptionHandlers(
+          new FetchException({
+            errorType: 'FetchException',
+            requestUrl,
+            options: request.options,
+            timestamp: new Date(),
+            cause,
+          }),
+          exceptionHandlers,
+        );
       }
+
+      if (response.ok) {
+        return response;
+      }
+
+      return runExceptionHandlers(
+        new FetchException({
+          errorType: 'FetchException',
+          requestUrl,
+          response,
+          options: request.options,
+          timestamp: new Date(),
+        }),
+        exceptionHandlers,
+      );
     },
   };
 }

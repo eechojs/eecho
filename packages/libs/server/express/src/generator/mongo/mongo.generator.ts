@@ -1,44 +1,162 @@
-import { ClientSession, Filter, FindOneAndUpdateOptions, MongoClient, ObjectId, UpdateFilter } from "mongodb";
+import { ObjectId } from 'mongodb';
+import type {
+  ClientSession,
+  Document,
+  Filter,
+  FindOneAndUpdateOptions,
+  MongoClient,
+  OptionalUnlessRequiredId,
+  Sort,
+  UpdateFilter,
+} from 'mongodb';
 import { z } from 'zod';
 
-import { DefinitionDocument, ViewDefinition, Definition, findRepositoryContext } from "@eecho/definition";
-import { extractSearchOption, extractSearchArrayOption, extractUpdateOption, extractCreateFieldWithSystem } from "@eecho/definition";
+import {
+  extractCreateFieldWithSystem,
+  extractObjectIdFields,
+  extractSearchArrayOption,
+  extractSearchOption,
+  extractSortableOption,
+  findRepositoryContext,
+} from '@eecho/definition';
+import type {
+  Definition,
+  DefinitionDocument,
+  RepositoryContextEntry,
+  SearchField,
+  SortField,
+  UpdateField,
+  ViewDefinition,
+} from '@eecho/definition';
 
-// Create용 타입: Optional만 제외하고 System 포함
-type CreateDocument<T extends Definition> = {
-  [K in keyof ReturnType<typeof extractCreateFieldWithSystem<T>>]: z.infer<ReturnType<typeof extractCreateFieldWithSystem<T>>[K]>;
+type CreateDocument<TDefinition extends Definition> = {
+  [K in keyof ReturnType<typeof extractCreateFieldWithSystem<TDefinition>>]:
+    z.input<ReturnType<typeof extractCreateFieldWithSystem<TDefinition>>[K]>;
 };
 
-// 검색 가능한 필드들을 추출하는 헬퍼 함수 (기존 helper 활용)
-function getSearchableFields(definition: Definition) {
-  const searchableFields = Object.keys(extractSearchOption({ definition }));
-  const searchableArrayFields = Object.keys(extractSearchArrayOption({ definition }));
-  return [...searchableFields, ...searchableArrayFields];
+interface RelationInfo {
+  relation: ViewDefinition['relations'][number];
+  context: RepositoryContextEntry;
+  alias: string;
 }
 
-// 검색 쿼리를 빌드하는 헬퍼 함수
-function buildSearchQuery(search: any, searchableFields: string[]) {
-  if (!search) return {};
-  
-  return Object.fromEntries(
-    Object.entries(search)
-      .filter(([_, value]) => value)
-      .map(([key, value]) => {
-        if (!searchableFields.includes(key)) {
-          throw new Error(`Invalid search field: ${key}`);
-        }
+function getSearchableFields(definition: Definition) {
+  return new Set([
+    ...Object.keys(extractSearchOption({ definition })),
+    ...Object.keys(extractSearchArrayOption({ definition })),
+  ]);
+}
 
-        if (Array.isArray(value)) {
-          return [key, { $in: value }];
-        } else if (typeof value === 'string') {
-          return [key, { $regex: value, $options: 'i' }];
-        } else if (value instanceof ObjectId) {
-          return [key, value];
-        } else {
-          throw new Error(`Unsupported search field type for key: ${key}`);
-        }
-      })
+function getSortableFields(definition: Definition) {
+  return new Set(Object.keys(extractSortableOption({ definition })));
+}
+
+function escapeRegularExpression(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildSearchQuery<TDocument extends Document>(
+  filter: object | undefined,
+  searchableFields: ReadonlySet<string>,
+  objectIdFields: ReadonlySet<string>,
+) {
+  if (!filter) {
+    return {};
+  }
+
+  const entries = Object.entries(filter)
+    .filter(([, value]) => value !== undefined)
+    .map(([key, value]) => {
+      if (!searchableFields.has(key)) {
+        throw new Error(`Invalid search field: ${key}`);
+      }
+
+      if (objectIdFields.has(key)) {
+        const objectIdValue = (item: unknown) => (
+          item === null || item instanceof ObjectId
+            ? item
+            : new ObjectId(String(item))
+        );
+
+        return Array.isArray(value)
+          ? [key, { $in: value.map(objectIdValue) }]
+          : [key, objectIdValue(value)];
+      }
+
+      if (Array.isArray(value)) {
+        return [key, { $in: value }];
+      }
+
+      if (typeof value === 'string') {
+        return [key, { $regex: escapeRegularExpression(value), $options: 'i' }];
+      }
+
+      if (
+        value === null
+        || typeof value === 'number'
+        || typeof value === 'boolean'
+        || value instanceof Date
+        || value instanceof ObjectId
+      ) {
+        return [key, value];
+      }
+
+      throw new Error(`Unsupported search value for field: ${key}`);
+    });
+
+  return Object.fromEntries(entries) as Filter<TDocument>;
+}
+
+function buildSort(
+  sort: object | undefined,
+  sortableFields: ReadonlySet<string>,
+): Sort | undefined {
+  if (!sort) {
+    return undefined;
+  }
+
+  const entries = Object.entries(sort).map(([key, direction]) => {
+    if (!sortableFields.has(key)) {
+      throw new Error(`Invalid sort field: ${key}`);
+    }
+
+    if (direction !== 'asc' && direction !== 'desc') {
+      throw new Error(`Invalid sort direction for field: ${key}`);
+    }
+
+    return [key, direction === 'asc' ? 1 : -1];
+  });
+
+  return Object.fromEntries(entries);
+}
+
+function convertObjectIdFields(
+  document: Record<string, unknown>,
+  objectIdFields: ReadonlySet<string>,
+) {
+  return Object.fromEntries(
+    Object.entries(document).map(([key, value]) => {
+      if (!objectIdFields.has(key) || value === null || value === undefined) {
+        return [key, value];
+      }
+
+      if (Array.isArray(value)) {
+        return [key, value.map((item) => item instanceof ObjectId ? item : new ObjectId(String(item)))];
+      }
+
+      return [key, value instanceof ObjectId ? value : new ObjectId(String(value))];
+    }),
   );
+}
+
+function validatePagination(page: number, limit: number) {
+  if (!Number.isInteger(page) || page < 1) {
+    throw new RangeError('page must be a positive integer.');
+  }
+
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new RangeError('limit must be a positive integer.');
+  }
 }
 
 export function genRepository<TDefinition extends Definition>(params: {
@@ -48,213 +166,204 @@ export function genRepository<TDefinition extends Definition>(params: {
   collectionName: string;
 }) {
   const { definition, dbClient, dbName, collectionName } = params;
-
   type Schema = DefinitionDocument<TDefinition>;
-  
-  // 컬렉션 가져오기
-  const getCollection = async () => {
-    return (await dbClient).db(dbName).collection<Schema>(collectionName);
-  };
 
   const searchableFields = getSearchableFields(definition);
+  const sortableFields = getSortableFields(definition);
+  const objectIdFields = new Set(extractObjectIdFields({ definition }).map(String));
+  const createSchema = z.object(extractCreateFieldWithSystem({ definition }));
+  const getCollection = async () => (
+    (await dbClient).db(dbName).collection<Schema>(collectionName)
+  );
 
-  const repository = {
-    async getItems(params: { 
-      page?: number; 
-      limit?: number; 
-      search?: any; 
-    }) {
+  return {
+    async getItems(input: {
+      page?: number;
+      limit?: number;
+      filter?: SearchField<TDefinition>;
+      sort?: SortField<TDefinition>;
+      // Backward-compatible alias; filter is the public API term used by generated specifications.
+      search?: SearchField<TDefinition>;
+    } = {}) {
+      const { page = 1, limit = 15, filter, search, sort } = input;
+      validatePagination(page, limit);
+
       const collection = await getCollection();
-      const { page = 1, limit = 15, search } = params;
-
-      const query = buildSearchQuery(search, searchableFields);
-      
-      return collection
+      const query = buildSearchQuery<Schema>(
+        filter ?? search,
+        searchableFields,
+        objectIdFields,
+      );
+      const cursor = collection
         .find(query)
-        .limit(limit)
         .skip((page - 1) * limit)
-        .toArray();
+        .limit(limit);
+      const mongoSort = buildSort(sort, sortableFields);
+
+      if (mongoSort) {
+        cursor.sort(mongoSort);
+      }
+
+      return cursor.toArray();
     },
-    async putItem(params: {
+
+    async putItem(input: {
       idFilter: Filter<Schema>;
       updateFilter: UpdateFilter<Schema>;
       putOption?: FindOneAndUpdateOptions;
     }) {
       const collection = await getCollection();
-      const doc = await collection.findOneAndUpdate(
-        params.idFilter, 
-        params.updateFilter, 
-        params.putOption ?? {}
+      const document = await collection.findOneAndUpdate(
+        input.idFilter,
+        input.updateFilter,
+        input.putOption ?? {},
       );
-      
-      if (!doc) {
+
+      if (!document) {
         throw new Error('Failed to upsert document.');
       }
 
-      return doc;
+      return document;
     },
-    async updateItemById(
-      params: {
-        _id: ObjectId;
-        data: any;
-      },
-      option?: {
-        session?: ClientSession;
-      }
-    ) {
-      const collection = await getCollection();
-      
-      return collection.updateOne(
-        { _id: { $eq: params._id } } as Filter<Schema>,
-        { $set: params.data as Partial<Schema> },
-        { session: option?.session }
-      );
-    },
-    async createItems(
-      params: {
-        items: CreateDocument<TDefinition>[];
-      },
-      option?: {
-        session?: ClientSession;
-      }
-    ) {
-      const collection = await getCollection();
-      
-      // extractCreateFieldWithSystem을 사용하여 스키마 생성 (Optional만 제외)
-      const createFields = extractCreateFieldWithSystem({ definition });
-      const createSchema = z.object(createFields);
-      
-      // 각 아이템에 대해 스키마 검증
-      const validatedItems = params.items.map(item => createSchema.parse(item));
-      
-      return collection.insertMany(
-        validatedItems as any[],
-        { session: option?.session }
-      );
-    },
-    
-  };
 
-  return repository;
+    async updateItemById(
+      input: {
+        _id: ObjectId | string;
+        data: UpdateField<TDefinition>;
+      },
+      options?: { session?: ClientSession },
+    ) {
+      const collection = await getCollection();
+
+      return collection.updateOne(
+        { _id: { $eq: input._id instanceof ObjectId ? input._id : new ObjectId(input._id) } } as Filter<Schema>,
+        { $set: input.data as Partial<Schema> },
+        { session: options?.session },
+      );
+    },
+
+    async createItems(
+      input: { items: CreateDocument<TDefinition>[] },
+      options?: { session?: ClientSession },
+    ) {
+      const collection = await getCollection();
+      const validatedItems = input.items.map((item) => (
+        convertObjectIdFields(createSchema.parse(item), objectIdFields)
+      ));
+
+      // Zod validates the generated shape, but MongoDB cannot derive its generic from that runtime schema.
+      return collection.insertMany(
+        validatedItems as unknown as OptionalUnlessRequiredId<Schema>[],
+        { session: options?.session },
+      );
+    },
+  };
 }
 
-// Projection을 빌드하는 헬퍼 함수
 function buildProjection(
-  viewDefinition: any,
-  baseModelKeys: Set<string>,
-  relationInfos: any[]
+  viewDefinition: ViewDefinition['viewDefinition'],
+  baseModelKeys: ReadonlySet<string>,
+  relationInfos: readonly RelationInfo[],
 ) {
-  const projectionEntries: [string, any][] = [['_id', 1]];
+  const projectionEntries: Array<[string, unknown]> = [['_id', 1]];
 
-  for (const [key, fieldDef] of Object.entries(viewDefinition)) {
+  for (const [key, fieldDefinition] of Object.entries(viewDefinition)) {
     if (baseModelKeys.has(key)) {
       projectionEntries.push([key, 1]);
       continue;
     }
 
-    let mapped = false;
-    for (const { rel, alias } of relationInfos) {
-      const relationField = Object.values(rel.relationModel).find(
-        (relationDef: any) => relationDef.key === (fieldDef as any).key
-      );
+    const relationInfo = relationInfos.find(({ relation }) => (
+      Object.values(relation.relationModel)
+        .some((relationField) => relationField.key === fieldDefinition.key)
+    ));
 
-      if (relationField) {
-        projectionEntries.push([
-          key,
-          { $first: `$${alias}.${(relationField as any).key}` }
-        ]);
-        mapped = true;
-        break;
-      }
-    }
-
-    if (!mapped) {
-      projectionEntries.push([key, 1]);
-    }
+    projectionEntries.push([
+      key,
+      relationInfo
+        ? { $first: `$${relationInfo.alias}.${fieldDefinition.key}` }
+        : 1,
+    ]);
   }
 
   return { $project: Object.fromEntries(projectionEntries) };
 }
 
-// View Repository 생성 함수 (인터셉터 미지원)
 export function genViewRepository<TDefinition extends ViewDefinition>(params: {
   definition: TDefinition;
   dbClient: Promise<MongoClient>;
 }) {
   const { definition, dbClient } = params;
-
-  // Base Model 컨텍스트 찾기
   const baseModelContext = findRepositoryContext(definition.baseModel);
+
   if (!baseModelContext) {
-    throw new Error('BaseModel Not Registered');
+    throw new Error('Base model is not registered.');
   }
 
-  // 컬렉션 가져오기
-  const getCollection = async () => {
-    const client = await dbClient;
-    return client
-      .db(baseModelContext.dbName)
-      .collection(baseModelContext.collectionName);
-  };
-
-  // 검색 가능한 필드들 추출 (기존 helper 활용)
   const searchableFields = getSearchableFields(definition.viewDefinition);
-
+  const sortableFields = getSortableFields(definition.viewDefinition);
+  const objectIdFields = new Set(
+    extractObjectIdFields({ definition: definition.viewDefinition }).map(String),
+  );
   const baseModelKeys = new Set(Object.keys(definition.baseModel));
+  const relationInfos = definition.relations.map((relation): RelationInfo => {
+    const context = findRepositoryContext(relation.relationModel);
 
-  // Relation 정보들을 미리 계산
-  const relationInfos = definition.relations.map((rel) => {
-    const relModelContext = findRepositoryContext(rel.relationModel);
-    if (!relModelContext) {
-      throw new Error('Relation Model Not Registered');
+    if (!context) {
+      throw new Error('Relation model is not registered.');
     }
 
     return {
-      rel,
-      relModelContext,
-      alias: `${relModelContext.collectionName}_${rel.relationKey}_info`,
+      relation,
+      context,
+      alias: `${context.collectionName}_${relation.relationKey}_info`,
     };
   });
+  const getCollection = async () => (
+    (await dbClient)
+      .db(baseModelContext.dbName)
+      .collection(baseModelContext.collectionName)
+  );
 
-  const repository = {
-    async getItems(params: {
+  return {
+    async getItems(input: {
       page?: number;
       limit?: number;
-      search?: any;
-    }) {
-      const collection = await getCollection();
-      const { page = 1, limit = 15, search } = params;
+      filter?: SearchField<TDefinition['viewDefinition']>;
+      sort?: SortField<TDefinition['viewDefinition']>;
+      // Backward-compatible alias; filter is the public API term used by generated specifications.
+      search?: SearchField<TDefinition['viewDefinition']>;
+    } = {}) {
+      const { page = 1, limit = 15, filter, search, sort } = input;
+      validatePagination(page, limit);
 
-      // 검색 조건 빌드
-      const query = buildSearchQuery(search, searchableFields);
-
-      // $lookup 단계 빌드
-      const lookups = relationInfos.map(({ rel, relModelContext, alias }) => ({
+      const query = buildSearchQuery<Document>(
+        filter ?? search,
+        searchableFields,
+        objectIdFields,
+      );
+      const mongoSort = buildSort(sort, sortableFields);
+      const lookups = relationInfos.map(({ relation, context, alias }) => ({
         $lookup: {
-          from: relModelContext.collectionName,
-          localField: rel.baseKey,
-          foreignField: rel.relationKey,
+          from: context.collectionName,
+          localField: relation.baseKey,
+          foreignField: relation.relationKey,
           as: alias,
         },
       }));
+      const pipeline: Document[] = [
+        ...lookups,
+        buildProjection(definition.viewDefinition, baseModelKeys, relationInfos),
+        { $match: query },
+        ...(mongoSort ? [{ $sort: mongoSort }] : []),
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      ];
+      const collection = await getCollection();
 
-      // Projection 단계 빌드
-      const projection = buildProjection(definition.viewDefinition, baseModelKeys, relationInfos);
-
-      // Aggregate 실행
-      const docs = await collection
-        .aggregate([
-          { $match: query },
-          ...lookups,
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-          projection,
-        ])
-        .toArray() as DefinitionDocument<TDefinition['viewDefinition']>[];
-
-      return docs;
+      return collection
+        .aggregate<DefinitionDocument<TDefinition['viewDefinition']>>(pipeline)
+        .toArray();
     },
   };
-
-  return repository;
 }

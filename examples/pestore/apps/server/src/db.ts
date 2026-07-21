@@ -1,53 +1,24 @@
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { PetRepository } from "./routers/pet/pet.definition";
 
-let MongoServer: MongoMemoryServer;
+let mongoServer: MongoMemoryServer | undefined;
+let mongoClientPromise: Promise<MongoClient> | undefined;
 
-export async function initMongoDB() {
-  MongoServer = await MongoMemoryServer.create();
-  return MongoServer.getUri();
+async function connectMongoDB() {
+  mongoServer = await MongoMemoryServer.create();
+  return MongoClient.connect(mongoServer.getUri());
+}
+
+export function getDBClient() {
+  mongoClientPromise ??= connectMongoDB();
+  return mongoClientPromise;
 }
 
 export async function closeMongoServer() {
-  if (MongoServer) {
-    await MongoServer.stop();
-  }
-}
+  const mongoClient = await mongoClientPromise;
+  await mongoClient?.close();
+  await mongoServer?.stop();
 
-export async function getDBClient() {
-  const mongoUri = await initMongoDB();
-  return MongoClient.connect(mongoUri);
-}
-
-export function initCollectionData() {
-  const curDate = new Date();
-  const InitPets = [
-    { _id: new ObjectId().toString(), 
-      species: "Dog" as const, 
-      breed: "Cogi", 
-      birthDate: new Date('2025-04-04'), 
-      description: "Friendly",
-      createdAt: curDate,
-      updatedAt: curDate
-    },
-    { _id: new ObjectId().toString(), 
-      species: "Dog" as const, 
-      breed: "Labrador", 
-      birthDate: new Date('2025-07-07'), 
-      description: "Gentle and loving.",
-      createdAt: curDate,
-      updatedAt: curDate
-    },
-    { _id: new ObjectId().toString(), 
-      species: "Dog" as const, 
-      breed: "Bulldog", 
-      birthDate: new Date('2025-10-16'), 
-      description: "Strong and courageous.",
-      createdAt: curDate,
-      updatedAt: curDate
-    },
-  ];
-
-  PetRepository.createItems({ items: InitPets });
+  mongoClientPromise = undefined;
+  mongoServer = undefined;
 }

@@ -42,3 +42,42 @@ test('petstore client renders seeded pets from the running server', async ({ pag
     await expect(page.getByText(breed)).toBeVisible();
   }
 });
+
+test('petstore API filters and sorts generated read endpoints', async ({ request }) => {
+  const seededPayload = await waitForSeededPets(request);
+
+  const filteredResponse = await request.get(`${serverApiUrl}?filter%5Bbreed%5D=Lab`);
+  expect(filteredResponse.ok()).toBeTruthy();
+  const filteredPayload = await filteredResponse.json();
+  expect(filteredPayload.data.map((pet: { breed: string }) => pet.breed)).toEqual(['Labrador']);
+
+  const sortedResponse = await request.get(`${serverApiUrl}?sort%5Bbreed%5D=desc`);
+  expect(sortedResponse.ok()).toBeTruthy();
+  const sortedPayload = await sortedResponse.json();
+  expect(sortedPayload.data.map((pet: { breed: string }) => pet.breed)).toEqual([
+    'Labrador',
+    'Cogi',
+    'Bulldog',
+  ]);
+
+  const firstPetId = seededPayload.data[0]._id;
+  const objectIdResponse = await request.get(
+    `${serverApiUrl}?filter%5B_id%5D=${encodeURIComponent(firstPetId)}`,
+  );
+  expect(objectIdResponse.ok()).toBeTruthy();
+  const objectIdPayload = await objectIdResponse.json();
+  expect(objectIdPayload.data.map((pet: { _id: string }) => pet._id)).toEqual([firstPetId]);
+});
+
+test('petstore API returns a structured validation error', async ({ request }) => {
+  await waitForSeededPets(request);
+
+  const response = await request.get(`${serverApiUrl}?page=0`);
+  expect(response.status()).toBe(400);
+  expect(await response.json()).toMatchObject({
+    success: false,
+    error: {
+      code: 'INVALID_REQUEST',
+    },
+  });
+});

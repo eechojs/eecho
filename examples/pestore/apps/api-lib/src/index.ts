@@ -1,24 +1,29 @@
-import { createAPI, createHttpClient } from "@eecho/api-client";
+import { createAPI, createHttpClient } from '@eecho/api-client';
 
-import { PetAPIDefinition, OrderAPIDefinition, PetToyAPIDefinition } from "./api.definition";
+import { OrderAPIDefinition, PetAPIDefinition, PetToyAPIDefinition } from './api.definition.js';
 
-export * from "./model.definition";
+export * from './model.definition.js';
+export * from './api.definition.js';
 
 const httpClient = createHttpClient();
+const petAPI = createAPI({
+  apiSpec: PetAPIDefinition.ReadAPISpecification,
+  httpClient,
+});
+const orderAPI = createAPI({
+  apiSpec: OrderAPIDefinition.ReadAPISpecification,
+  httpClient,
+});
+const petToyAPI = createAPI({
+  apiSpec: PetToyAPIDefinition.ReadAPISpecification,
+  httpClient,
+});
 
 export const PetStoreAPIClient = {
-  setHost: (host: string)=>{
-    return httpClient.setHost(host);
-  },
+  setHost: httpClient.setHost,
   API: {
-    Pet: {
-      getItems: createAPI({ apiSpec: PetAPIDefinition.ReadAPISpecification, httpClient})['getItems']
-    },
-    Order: {
-      getItems: createAPI({ apiSpec: OrderAPIDefinition.ReadAPISpecification, httpClient})['getItems']
-    },
-    PetToy: {
-      getItems: createAPI({ apiSpec: PetToyAPIDefinition.ReadAPISpecification, httpClient})['getItems']
-    }
-  }
+    Pet: petAPI,
+    Order: orderAPI,
+    PetToy: petToyAPI,
+  },
 };

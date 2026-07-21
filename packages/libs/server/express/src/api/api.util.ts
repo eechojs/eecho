@@ -1,41 +1,29 @@
-import type { Request as ExpressRequest, Response as ExpressResponse, NextFunction, Router } from "express";
-import { z } from "zod";
+import type { Request as ExpressRequest, Router } from 'express';
 
-import { ExpressMiddleware } from "./api.type";
-import { ServerAPISpecification } from "@eecho/definition";
+import type { ServerAPISpecification } from '@eecho/definition';
 
-export const parseRequestParams = <TSpec extends ServerAPISpecification>(
-  req: ExpressRequest,
-  requestSpec: TSpec['Request']
-) => {
-  type QueryParamsType = TSpec['Request']['queryParams'] extends z.ZodTypeAny 
-    ? z.infer<TSpec['Request']['queryParams']> 
-    : Record<string, any>;
-    
-  type BodyParamsType = TSpec['Request']['body'] extends z.ZodTypeAny 
-    ? z.infer<TSpec['Request']['body']> 
-    : Record<string, any>;
+import type { ExpressMiddleware, ExtractBodyParams, ExtractQueryParams } from './api.type.js';
 
-  let queryParams: QueryParamsType = {} as QueryParamsType;
-  let bodyParams: BodyParamsType = {} as BodyParamsType;
-
-  if (requestSpec.queryParams) {
-    queryParams = requestSpec.queryParams.parse(req.query) as QueryParamsType;
-  }
-
-  if (requestSpec.body) {
-    bodyParams = requestSpec.body.parse(req.body) as BodyParamsType;
-  }
+export function parseRequestParams<TSpec extends ServerAPISpecification>(
+  request: ExpressRequest,
+  requestSpec: TSpec['Request'],
+) {
+  const queryParams = requestSpec.queryParams
+    ? requestSpec.queryParams.parse(request.query) as ExtractQueryParams<TSpec>
+    : {} as ExtractQueryParams<TSpec>;
+  const bodyParams = requestSpec.body
+    ? requestSpec.body.parse(request.body) as ExtractBodyParams<TSpec>
+    : {} as ExtractBodyParams<TSpec>;
 
   return { queryParams, bodyParams };
-};
+}
 
-export const registerRoute = (
+export function registerRoute(
   router: Router,
   method: ServerAPISpecification['Method'],
   endpoint: string,
-  middlewares: ExpressMiddleware[]
-) => {
+  middlewares: readonly ExpressMiddleware[],
+) {
   switch (method) {
     case 'GET':
       router.get(endpoint, ...middlewares);
@@ -52,7 +40,5 @@ export const registerRoute = (
     case 'DELETE':
       router.delete(endpoint, ...middlewares);
       break;
-    default:
-      throw new Error(`Unsupported HTTP method: ${method}`);
   }
-};
+}
