@@ -1,6 +1,6 @@
 {
   "name": "@eecho/express",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Express and MongoDB adapters for shared EEcho API contracts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@eecho/definition": "^0.0.3",
+    "@eecho/definition": "^0.1.0",
     "express": "^5.1.0",
     "mongodb": "^6.20.0",
     "zod": "^4.1.12"

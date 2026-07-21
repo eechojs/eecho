@@ -1,6 +1,6 @@
 {
   "name": "eecho",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Runtime-validated TypeScript API contracts for clients, Express, and MongoDB",
   "main": "index.js",
