@@ -29,8 +29,8 @@ export interface PrimitiveDefinition<
   index: TIndex;
   api: TApi;
   key: TKey;
-  kind: "primitive";
-};
+  kind: 'primitive';
+}
 
 export interface ArrayDefinition<
   TType extends PrimitiveDefinition | ObjectDefinition = PrimitiveDefinition | ObjectDefinition,
@@ -38,7 +38,7 @@ export interface ArrayDefinition<
 > {
   type: TType;
   key: TKey;
-  kind: "array";
+  kind: 'array';
 }
 
 export interface ObjectDefinition<
@@ -47,7 +47,7 @@ export interface ObjectDefinition<
 > {
   type: TType;
   key: TKey;
-  kind: "object";
+  kind: 'object';
 }
 
 export interface Definition {
@@ -65,21 +65,21 @@ export interface InputPrimitiveDefinition<
 }
 
 export interface InputArrayDefinition<
-  Titem extends InputPrimitiveDefinition | InputObjectDefinition 
+  TItem extends InputPrimitiveDefinition | InputObjectDefinition
     = InputPrimitiveDefinition | InputObjectDefinition
 > {
-  type: readonly [Titem];
-};
+  type: readonly [TItem];
+}
 
 export interface InputObjectDefinition<
-  Ttype extends InputDefinition = InputDefinition
+  TType extends InputDefinition = InputDefinition
 > {
-  type: Ttype;
+  type: TType;
 }
 
 export interface InputDefinition {
   [field: string]: InputPrimitiveDefinition | InputArrayDefinition | InputObjectDefinition;
-};
+}
 
 type NormalizeAPI<TApi extends Partial<APIIndex> | undefined> = {
   index: TApi extends { index: infer TIndex extends APIIndex['index'] } ? TIndex : [];

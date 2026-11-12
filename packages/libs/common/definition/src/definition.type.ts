@@ -1,16 +1,7 @@
 import { z } from 'zod';
-import type { Definition, PrimitiveDefinition, PrimitiveIndex, APIIndex } from './model/model.define.type.js';
+import type { APIIndex, Definition, PrimitiveDefinition, PrimitiveIndex } from './model/model.define.type.js';
 
-type InferDefinitionValue<TField> =
-  TField extends { kind: 'primitive'; type: infer TSchema extends z.ZodTypeAny }
-    ? z.infer<TSchema>
-    : TField extends { kind: 'array'; type: infer TItem }
-      ? InferDefinitionValue<TItem>[]
-      : TField extends { kind: 'object'; type: infer TObject extends Definition }
-        ? DefinitionDocument<TObject>
-        : never;
-
-type PrimitiveKeysWithIndexFlag<TDefinition extends Definition, TFlag extends PrimitiveIndex> = {
+export type PrimitiveKeysWithIndexFlag<TDefinition extends Definition, TFlag extends PrimitiveIndex> = {
   [K in keyof TDefinition]:
     TDefinition[K] extends PrimitiveDefinition<z.ZodTypeAny, infer TIndices>
       ? TFlag extends TIndices[number]
@@ -19,7 +10,7 @@ type PrimitiveKeysWithIndexFlag<TDefinition extends Definition, TFlag extends Pr
       : never;
 }[keyof TDefinition];
 
-type PrimitiveKeysWithApiFlag<
+export type PrimitiveKeysWithApiFlag<
   TDefinition extends Definition,
   TSection extends keyof APIIndex,
   TFlag extends string
@@ -34,7 +25,14 @@ type PrimitiveKeysWithApiFlag<
       : never;
 }[keyof TDefinition];
 
-export type DefinitionValue<TField> = InferDefinitionValue<TField>;
+export type DefinitionValue<TField> =
+  TField extends { kind: 'primitive'; type: infer TSchema extends z.ZodTypeAny }
+    ? z.infer<TSchema>
+    : TField extends { kind: 'array'; type: infer TItem }
+      ? DefinitionValue<TItem>[]
+      : TField extends { kind: 'object'; type: infer TObject extends Definition }
+        ? DefinitionDocument<TObject>
+        : never;
 
 export type DefinitionDocument<T extends Definition> = {
   [K in keyof T]: DefinitionValue<T[K]>;

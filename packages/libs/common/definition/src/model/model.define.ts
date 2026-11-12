@@ -12,8 +12,7 @@ import {
   PrimitiveDefinition,
 } from './model.define.type.js';
 
-type InputFieldDefinition = InputPrimitiveDefinition | InputArrayDefinition | InputObjectDefinition;
-type NormalizedFieldDefinition = Definition[string];
+type InputFieldDefinition = InputDefinition[string];
 
 const EMPTY_API_INDEX = {
   index: [],
@@ -80,7 +79,7 @@ function isArrayDefinitionInput(input: InputFieldDefinition): input is InputArra
   return Array.isArray(input.type);
 }
 
-function normalizeFieldDefinition(input: InputFieldDefinition, key: string): NormalizedFieldDefinition {
+function normalizeFieldDefinition(input: InputFieldDefinition, key: string): Definition[string] {
   if (isArrayDefinitionInput(input)) {
     return defineArray(input, key);
   }

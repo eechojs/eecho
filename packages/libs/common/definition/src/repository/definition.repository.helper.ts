@@ -9,7 +9,7 @@ import type {
 } from '../model/model.define.type.js';
 import type { DefinitionDocument } from '../definition.type.js';
 
-type CreateFieldKeys<TDefinition extends Definition> = {
+type RequiredCreateFieldKeys<TDefinition extends Definition> = {
   [K in keyof TDefinition]:
     TDefinition[K] extends PrimitiveDefinition<z.ZodTypeAny, readonly PrimitiveIndex[], infer TApi>
       ? 'Optional' extends TApi['create'][number]
@@ -47,12 +47,17 @@ export function extractCreateFieldWithSystem<TDefinition extends Definition>(par
   definition: TDefinition;
 }) {
   const createFields = Object.fromEntries(
-    Object.entries(params.definition)
-      .filter(([, field]) => field.kind !== 'primitive' || !field.api.create.includes('Optional'))
-      .map(([key, field]) => [key, createFieldSchema(field)]),
+    Object.entries(params.definition).map(([key, field]) => {
+      const schema = createFieldSchema(field);
+      const isOptional = field.kind === 'primitive' && field.api.create.includes('Optional');
+
+      return [key, isOptional ? schema.optional() : schema];
+    }),
   );
 
   return createFields as {
-    [K in CreateFieldKeys<TDefinition>]: FieldSchema<TDefinition[K]>;
+    [K in keyof TDefinition]: K extends RequiredCreateFieldKeys<TDefinition>
+      ? FieldSchema<TDefinition[K]>
+      : z.ZodOptional<FieldSchema<TDefinition[K]>>;
   };
 }

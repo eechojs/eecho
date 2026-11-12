@@ -3,4 +3,5 @@ export type { APIExceptionHandler, FetchExceptionContext, RequestHandler } from 
 export { createRetryHandler } from './handlers.js';
 export { createAPI } from './spec.js';
 export type { APIMapOf } from './spec.js';
-export { genAPIDefinition } from './spec.generator.js';
+// Compatibility re-export: API contracts are owned by @eecho/definition.
+export { genAPIDefinition } from '@eecho/definition';

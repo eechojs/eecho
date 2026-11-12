@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ClientAPISpecification } from '../spec.js';
 import type { Definition } from '../model/model.define.type.js';
 import {
+  extractCreateOptionalField,
   extractCreateRequiredField,
   extractReadableField,
   extractSearchArrayOption,
@@ -23,7 +24,10 @@ export function genAPIDefinition<
   endpointPrefix: TPrefix;
 }) {
   const { definition, endpointPrefix } = params;
-  const createRequiredFields = extractCreateRequiredField({ definition });
+  const createFields = {
+    ...extractCreateRequiredField({ definition }),
+    ...extractCreateOptionalField({ definition }),
+  };
   const readableFields = extractReadableField({ definition });
   const searchableFields = extractSearchOption({ definition });
   const searchableArrayFields = extractSearchArrayOption({ definition });
@@ -35,7 +39,7 @@ export function genAPIDefinition<
     Method: 'POST',
     operationId: 'createItems',
     Request: {
-      body: z.object({ data: z.object(createRequiredFields) }),
+      body: z.object({ data: z.object(createFields) }),
     },
     Response: {
       body: z.object({

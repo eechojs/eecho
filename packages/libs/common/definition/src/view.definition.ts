@@ -1,4 +1,3 @@
-import { registerRepositoryContext } from './definition.context.js';
 import type { Definition, PrimitiveDefinition } from './model/model.define.type.js';
 
 // Never permit directional m:n relation.
@@ -15,16 +14,4 @@ export interface ViewDefinition {
     relationKey: string;
   }[];
   index?: readonly never[];
-}
-
-export function registerModel(params: {
-  definition: Definition;
-  collectionName: string;
-  dbName: string;
-}) {
-  registerRepositoryContext({
-    model: params.definition,
-    collectionName: params.collectionName,
-    dbName: params.dbName,
-  });
 }

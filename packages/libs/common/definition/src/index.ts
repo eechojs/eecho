@@ -6,12 +6,16 @@ export type {
   SearchField,
   SortField,
   UpdateField,
+  // Compatibility alias for the earlier plural name.
+  UpdateField as UpdateFields,
 } from './definition.type.js';
 
-export type { UpdateField as UpdateFields } from './definition.type.js';
-
-export { Context } from './definition.context.js';
-export { findRepositoryContext, registerRepositoryContext } from './definition.context.js';
+export {
+  Context,
+  findRepositoryContext,
+  registerModel,
+  registerRepositoryContext,
+} from './definition.context.js';
 export type { RepositoryContextEntry } from './definition.context.js';
 
 export type {
@@ -22,22 +26,19 @@ export type {
 export { genAPIDefinition } from './api/api.js';
 
 export {
+  extractCreateOptionalField,
   extractCreateRequiredField,
+  extractObjectIdFields,
   extractReadableField,
   extractReadbleField,
-  extractUpdateOption,
-  extractSearchOption,
   extractSearchArrayOption,
+  extractSearchOption,
   extractSortableOption,
-  extractObjectIdFields
+  extractUpdateOption,
 } from './api/definition.api.helper.js';
-
-export {
-  extractCreateFieldWithSystem
-} from './repository/definition.repository.helper.js';
+export { extractCreateFieldWithSystem } from './repository/definition.repository.helper.js';
 
 export { defineModel } from './model/model.define.js';
-export { registerModel } from './view.definition.js';
 export type {
   Definition,
   DefinitionFrom,

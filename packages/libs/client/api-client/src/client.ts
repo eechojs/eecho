@@ -26,18 +26,22 @@ class FetchException extends Error implements FetchExceptionContext {
   readonly requestUrl: string;
   readonly response?: Response;
   readonly options: RequestInit;
-  readonly timestamp: Date;
+  readonly timestamp = new Date();
   readonly cause?: unknown;
 
-  constructor(context: FetchExceptionContext) {
-    const status = context.response ? ` (${context.response.status})` : '';
-    super(`Fetch failed for ${context.requestUrl}${status}`);
+  constructor(failure: {
+    requestUrl: string;
+    options: RequestInit;
+    response?: Response;
+    cause?: unknown;
+  }) {
+    const status = failure.response ? ` (${failure.response.status})` : '';
+    super(`Fetch failed for ${failure.requestUrl}${status}`);
 
-    this.requestUrl = context.requestUrl;
-    this.response = context.response;
-    this.options = context.options;
-    this.timestamp = context.timestamp;
-    this.cause = context.cause;
+    this.requestUrl = failure.requestUrl;
+    this.options = failure.options;
+    this.response = failure.response;
+    this.cause = failure.cause;
   }
 }
 
@@ -67,7 +71,7 @@ async function runExceptionHandlers(
         return result;
       }
 
-      throw exception;
+      break;
     }
   }
 
@@ -105,7 +109,7 @@ export function createHttpClient() {
     },
 
     async fetch(input: { url: string; options?: RequestOptions }) {
-      let request: { url: string; options: RequestOptions } = {
+      let request: Parameters<RequestHandler>[0] = {
         url: input.url,
         options: {
           ...input.options,
@@ -121,35 +125,21 @@ export function createHttpClient() {
       }
 
       const requestUrl = resolveRequestUrl(host, request.url);
-      let response: Response;
+      let response: Response | undefined;
+      let cause: unknown;
 
       try {
         response = await fetch(requestUrl, request.options);
-      } catch (cause) {
-        return runExceptionHandlers(
-          new FetchException({
-            errorType: 'FetchException',
-            requestUrl,
-            options: request.options,
-            timestamp: new Date(),
-            cause,
-          }),
-          exceptionHandlers,
-        );
+      } catch (error) {
+        cause = error;
       }
 
-      if (response.ok) {
+      if (response?.ok) {
         return response;
       }
 
       return runExceptionHandlers(
-        new FetchException({
-          errorType: 'FetchException',
-          requestUrl,
-          response,
-          options: request.options,
-          timestamp: new Date(),
-        }),
+        new FetchException({ requestUrl, options: request.options, response, cause }),
         exceptionHandlers,
       );
     },

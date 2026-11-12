@@ -1,13 +1,29 @@
-import type { NextFunction, Request as ExpressRequest, Response as ExpressResponse, Router } from 'express';
+import type { Request as ExpressRequest, RequestHandler, Router } from 'express';
 
 import type { ServerAPISpecification } from '@eecho/definition';
 
-import type { APIHandler, ExpressMiddleware } from './api.type.js';
-import { parseRequestParams, registerRoute } from './api.util.js';
+import type { APIHandler, ExpressMiddleware, ExtractBodyParams, ExtractQueryParams } from './api.type.js';
 
-export function setMiddleware<TResult>(middleware: ExpressMiddleware<TResult>) {
-  return (request: ExpressRequest, response: ExpressResponse, next: NextFunction) => {
-    return Promise.resolve(middleware(request, response, next)).catch(next);
+function parseRequestParams<TSpec extends ServerAPISpecification>(
+  request: ExpressRequest,
+  requestSpec: TSpec['Request'],
+) {
+  const { queryParams, body } = requestSpec;
+
+  return {
+    query: (queryParams ? queryParams.parse(request.query) : {}) as ExtractQueryParams<TSpec>,
+    body: (body ? body.parse(request.body) : {}) as ExtractBodyParams<TSpec>,
+  };
+}
+
+/** Forwards both thrown errors and rejected promises to Express error handling. */
+export function setMiddleware(middleware: ExpressMiddleware): RequestHandler {
+  return async (request, response, next) => {
+    try {
+      await middleware(request, response, next);
+    } catch (error) {
+      next(error);
+    }
   };
 }
 
@@ -32,19 +48,13 @@ export function setAPIEndpoint<TSpec extends ServerAPISpecification>(input: {
     throw new Error('Route endpoint and method must match the API specification.');
   }
 
-  const apiMiddleware = setMiddleware((request, response, next) => {
-    const { queryParams, bodyParams } = parseRequestParams<TSpec>(request, apiSpec.Request);
+  const apiMiddleware = setMiddleware((request, response, next) => handler({
+    req: request,
+    res: response,
+    next,
+    params: parseRequestParams<TSpec>(request, apiSpec.Request),
+  }));
+  const route = method.toLowerCase() as Lowercase<ServerAPISpecification['Method']>;
 
-    return handler({
-      req: request,
-      res: response,
-      next,
-      params: {
-        query: queryParams,
-        body: bodyParams,
-      },
-    });
-  });
-
-  registerRoute(router, method, apiEndpoint, [...middlewares, apiMiddleware]);
+  router[route](apiEndpoint, ...middlewares, apiMiddleware);
 }

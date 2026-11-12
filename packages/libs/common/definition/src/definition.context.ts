@@ -1,4 +1,4 @@
-import { Definition } from "./model/model.define.type.js";
+import type { Definition } from './model/model.define.type.js';
 
 export interface RepositoryContextEntry {
   model: Definition;
@@ -6,16 +6,8 @@ export interface RepositoryContextEntry {
   dbName: string;
 }
 
-interface DefinitionContext {
-  RepositoryContext: {
-    model: Definition;
-    collectionName: string;
-    dbName: string;
-  }[];
-}
-
-export const Context: DefinitionContext = {
-  RepositoryContext: []
+export const Context: { RepositoryContext: RepositoryContextEntry[] } = {
+  RepositoryContext: [],
 };
 
 export function registerRepositoryContext(entry: RepositoryContextEntry) {
@@ -24,4 +16,13 @@ export function registerRepositoryContext(entry: RepositoryContextEntry) {
 
 export function findRepositoryContext(model: Definition) {
   return Context.RepositoryContext.find((entry) => entry.model === model);
+}
+
+export function registerModel(params: {
+  definition: Definition;
+  collectionName: string;
+  dbName: string;
+}) {
+  const { definition, ...location } = params;
+  registerRepositoryContext({ model: definition, ...location });
 }

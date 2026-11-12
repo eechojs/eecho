@@ -29,10 +29,9 @@ import type {
   ViewDefinition,
 } from '@eecho/definition';
 
-type CreateDocument<TDefinition extends Definition> = {
-  [K in keyof ReturnType<typeof extractCreateFieldWithSystem<TDefinition>>]:
-    z.input<ReturnType<typeof extractCreateFieldWithSystem<TDefinition>>[K]>;
-};
+type CreateDocument<TDefinition extends Definition> = z.input<
+  z.ZodObject<ReturnType<typeof extractCreateFieldWithSystem<TDefinition>>>
+>;
 
 interface RelationInfo {
   relation: ViewDefinition['relations'][number];
@@ -55,6 +54,10 @@ function escapeRegularExpression(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function toObjectId(value: unknown) {
+  return value instanceof ObjectId ? value : new ObjectId(String(value));
+}
+
 function buildSearchQuery<TDocument extends Document>(
   filter: object | undefined,
   searchableFields: ReadonlySet<string>,
@@ -72,15 +75,11 @@ function buildSearchQuery<TDocument extends Document>(
       }
 
       if (objectIdFields.has(key)) {
-        const objectIdValue = (item: unknown) => (
-          item === null || item instanceof ObjectId
-            ? item
-            : new ObjectId(String(item))
-        );
+        const toNullableObjectId = (item: unknown) => item === null ? item : toObjectId(item);
 
         return Array.isArray(value)
-          ? [key, { $in: value.map(objectIdValue) }]
-          : [key, objectIdValue(value)];
+          ? [key, { $in: value.map(toNullableObjectId) }]
+          : [key, toNullableObjectId(value)];
       }
 
       if (Array.isArray(value)) {
@@ -140,11 +139,7 @@ function convertObjectIdFields(
         return [key, value];
       }
 
-      if (Array.isArray(value)) {
-        return [key, value.map((item) => item instanceof ObjectId ? item : new ObjectId(String(item)))];
-      }
-
-      return [key, value instanceof ObjectId ? value : new ObjectId(String(value))];
+      return [key, Array.isArray(value) ? value.map(toObjectId) : toObjectId(value)];
     }),
   );
 }
@@ -236,7 +231,7 @@ export function genRepository<TDefinition extends Definition>(params: {
       const collection = await getCollection();
 
       return collection.updateOne(
-        { _id: { $eq: input._id instanceof ObjectId ? input._id : new ObjectId(input._id) } } as Filter<Schema>,
+        { _id: { $eq: toObjectId(input._id) } } as Filter<Schema>,
         { $set: input.data as Partial<Schema> },
         { session: options?.session },
       );

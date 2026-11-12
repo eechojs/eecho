@@ -1,14 +1,8 @@
-import type { NextFunction, Request, Response } from 'express';
+import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
 
-type ExpressExceptionMiddleware = (
-  error: Error,
-  request: Request,
-  response: Response,
-  next: NextFunction,
-) => void;
-
-export const ExceptionMiddleware: ExpressExceptionMiddleware = (error, request, response, _next) => {
+// Express recognizes error middleware by its four declared parameters, so `_next` must stay.
+export const ExceptionMiddleware: ErrorRequestHandler = (error, request, response, _next) => {
   if (error instanceof ZodError) {
     response.status(400).json({
       success: false,
